@@ -14,13 +14,13 @@ form.addEventListener("submit", (event) => {
   }
 
   if (!valid) {
-    status.textContent = "Please fill in all fields with a valid email.";
+    status.textContent = "נא למלא את כל השדות ולהזין כתובת אימייל תקינה.";
     status.className = "form-status error";
     return;
   }
 
   // Placeholder: no backend yet. Hook this up to a form service (e.g. Formspree) later.
-  status.textContent = "Thanks! Your message has been received.";
+  status.textContent = "תודה! ההודעה שלך התקבלה.";
   status.className = "form-status success";
   form.reset();
 });
