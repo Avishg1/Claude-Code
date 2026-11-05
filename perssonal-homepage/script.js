@@ -1,4 +1,4 @@
-document.getElementById("year").textContent = new Date().getFullYear();
+document.getElementById("year").textContent = new Date().toLocaleDateString("he-IL", { year: "numeric" });
 
 const form = document.getElementById("contact-form");
 const status = document.getElementById("form-status");
