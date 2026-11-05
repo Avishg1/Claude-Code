@@ -1,668 +1,1316 @@
 <!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Murmuration — a flock that composes music</title>
-<style>
-:root{--fg:#e8ecf5;--dim:#8a93a8;--panel:rgba(12,15,26,.66);--line:rgba(255,255,255,.08);--acc:#9db8ff}
-*{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%;background:#05060c;color:var(--fg);font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden;user-select:none}
-#sky{position:fixed;inset:0;width:100vw;height:100vh;display:block;cursor:crosshair;touch-action:none}
-.ui{transition:opacity .5s}
-body.hide .ui{opacity:0;pointer-events:none}
-.glass{background:var(--panel);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:14px}
-#title{position:fixed;top:22px;left:26px;pointer-events:none}
-#title h1{font-weight:200;letter-spacing:.42em;font-size:20px;text-transform:uppercase}
-#title p{color:var(--dim);font-size:12px;margin-top:6px;letter-spacing:.06em}
-#stats{position:fixed;left:22px;bottom:22px;padding:14px 16px;font-size:12px;min-width:200px;pointer-events:none}
-#stats .row{display:flex;justify-content:space-between;gap:18px;margin:3px 0;color:var(--dim)}
-#stats .row b{color:var(--fg);font-weight:500;font-variant-numeric:tabular-nums}
-#stats .big{font-size:30px;font-weight:200;color:var(--fg);font-variant-numeric:tabular-nums;line-height:1}
-#stats .lbl{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);margin-bottom:4px}
-#spark{display:block;margin:8px 0 8px;width:200px;height:38px}
-#panel{position:fixed;top:18px;right:18px;width:250px;padding:14px 16px 12px;font-size:12px}
-#panel h2{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);font-weight:500;margin:4px 0 10px;display:flex;justify-content:space-between;align-items:center}
-#panel h2 button{all:unset;cursor:pointer;color:var(--dim);font-size:14px;padding:0 4px}
-#panel.min .body{display:none}
-.ctl{margin:9px 0}
-.ctl label{display:flex;justify-content:space-between;color:var(--dim);margin-bottom:4px}
-.ctl label span{color:var(--fg);font-variant-numeric:tabular-nums}
-input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:3px;background:rgba(255,255,255,.12);border-radius:2px;outline:none}
-input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;background:var(--acc);box-shadow:0 0 10px var(--acc);cursor:pointer}
-input[type=range]::-moz-range-thumb{width:13px;height:13px;border:0;border-radius:50%;background:var(--acc);box-shadow:0 0 10px var(--acc);cursor:pointer}
-.pals{display:flex;gap:8px;margin:12px 0 10px}
-.pal{flex:1;height:18px;border-radius:5px;cursor:pointer;border:1px solid transparent;opacity:.65;transition:.2s}
-.pal.on{opacity:1;border-color:rgba(255,255,255,.7)}
-.btns{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
-.btns button{all:unset;text-align:center;padding:7px 0;border-radius:8px;background:rgba(255,255,255,.06);cursor:pointer;font-size:11px;letter-spacing:.06em;transition:.15s}
-.btns button:hover{background:rgba(255,255,255,.14)}
-#hint{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);font-size:12px;color:var(--dim);padding:9px 16px;white-space:nowrap;pointer-events:none}
-#hint kbd{font-family:inherit;color:var(--fg);background:rgba(255,255,255,.08);padding:1px 6px;border-radius:4px;margin:0 2px}
-#intro{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,rgba(5,6,12,.35),rgba(5,6,12,.85));transition:opacity 1.2s;z-index:10}
-#intro.gone{opacity:0;pointer-events:none}
-#intro .card{text-align:center;max-width:560px;padding:20px}
-#intro h1{font-weight:100;font-size:clamp(40px,7vw,78px);letter-spacing:.28em;margin-right:-.28em;text-transform:uppercase}
-#intro p{color:var(--dim);line-height:1.7;margin:18px auto 30px;font-size:15px;max-width:460px}
-#intro button{all:unset;cursor:pointer;padding:13px 30px;border-radius:999px;border:1px solid rgba(255,255,255,.35);letter-spacing:.2em;text-transform:uppercase;font-size:12px;transition:.25s;margin:0 6px}
-#intro button:hover{background:rgba(255,255,255,.1);border-color:#fff;box-shadow:0 0 30px rgba(157,184,255,.35)}
-#intro button.quiet{border-color:transparent;color:var(--dim)}
-#intro small{display:block;margin-top:34px;color:#5d6478;font-size:11px;letter-spacing:.08em}
-#toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);font-size:13px;letter-spacing:.25em;text-transform:uppercase;color:#fff;opacity:0;transition:opacity .4s;pointer-events:none;text-shadow:0 0 18px rgba(157,184,255,.8)}
-@media (max-width:700px){#panel{display:none}#hint{display:none}}
-</style>
-</head>
-<body>
-<canvas id="sky"></canvas>
+<html lang="he" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>— להקה שמלחינה מוזיקה</title>
+    <style>
+      :root {
+        --fg: #e8ecf5;
+        --dim: #8a93a8;
+        --panel: rgba(12, 15, 26, 0.66);
+        --line: rgba(255, 255, 255, 0.08);
+        --acc: #9db8ff;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      html,
+      body {
+        height: 100%;
+        background: #05060c;
+        color: var(--fg);
+        font-family:
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          "Segoe UI",
+          Roboto,
+          sans-serif;
+        overflow: hidden;
+        user-select: none;
+      }
+      #sky {
+        position: fixed;
+        inset: 0;
+        width: 100vw;
+        height: 100vh;
+        display: block;
+        cursor: crosshair;
+        touch-action: none;
+      }
+      .ui {
+        transition: opacity 0.5s;
+      }
+      body.hide .ui {
+        opacity: 0;
+        pointer-events: none;
+      }
+      .glass {
+        background: var(--panel);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+      }
+      #title {
+        position: fixed;
+        top: 22px;
+        right: 26px;
+        pointer-events: none;
+      }
+      #title h1 {
+        font-weight: 300;
+        letter-spacing: 0.2em;
+        font-size: 22px;
+        text-transform: uppercase;
+      }
+      #title p {
+        color: var(--dim);
+        font-size: 12px;
+        margin-top: 6px;
+        letter-spacing: 0.06em;
+      }
+      #stats {
+        position: fixed;
+        right: 22px;
+        bottom: 22px;
+        padding: 14px 16px;
+        font-size: 12px;
+        min-width: 200px;
+        pointer-events: none;
+      }
+      #stats .row {
+        display: flex;
+        justify-content: space-between;
+        gap: 18px;
+        margin: 3px 0;
+        color: var(--dim);
+      }
+      #stats .row b {
+        color: var(--fg);
+        font-weight: 500;
+        font-variant-numeric: tabular-nums;
+      }
+      #stats .big {
+        font-size: 30px;
+        font-weight: 200;
+        color: var(--fg);
+        font-variant-numeric: tabular-nums;
+        line-height: 1;
+      }
+      #stats .lbl {
+        font-size: 10px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--dim);
+        margin-bottom: 4px;
+      }
+      #spark {
+        display: block;
+        margin: 8px 0 8px;
+        width: 200px;
+        height: 38px;
+      }
+      #panel {
+        position: fixed;
+        top: 18px;
+        left: 18px;
+        width: 250px;
+        padding: 14px 16px 12px;
+        font-size: 12px;
+      }
+      #panel h2 {
+        font-size: 10px;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: var(--dim);
+        font-weight: 500;
+        margin: 4px 0 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      #panel h2 button {
+        all: unset;
+        cursor: pointer;
+        color: var(--dim);
+        font-size: 14px;
+        padding: 0 4px;
+      }
+      #panel.min .body {
+        display: none;
+      }
+      .ctl {
+        margin: 9px 0;
+      }
+      .ctl label {
+        display: flex;
+        justify-content: space-between;
+        color: var(--dim);
+        margin-bottom: 4px;
+      }
+      .ctl label span {
+        color: var(--fg);
+        font-variant-numeric: tabular-nums;
+      }
+      input[type="range"] {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 100%;
+        height: 3px;
+        background: rgba(255, 255, 255, 0.12);
+        border-radius: 2px;
+        outline: none;
+      }
+      input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 13px;
+        height: 13px;
+        border-radius: 50%;
+        background: var(--acc);
+        box-shadow: 0 0 10px var(--acc);
+        cursor: pointer;
+      }
+      input[type="range"]::-moz-range-thumb {
+        width: 13px;
+        height: 13px;
+        border: 0;
+        border-radius: 50%;
+        background: var(--acc);
+        box-shadow: 0 0 10px var(--acc);
+        cursor: pointer;
+      }
+      .pals {
+        display: flex;
+        gap: 8px;
+        margin: 12px 0 10px;
+      }
+      .pal {
+        flex: 1;
+        height: 18px;
+        border-radius: 5px;
+        cursor: pointer;
+        border: 1px solid transparent;
+        opacity: 0.65;
+        transition: 0.2s;
+      }
+      .pal.on {
+        opacity: 1;
+        border-color: rgba(255, 255, 255, 0.7);
+      }
+      .btns {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 6px;
+        margin-top: 8px;
+      }
+      .btns button {
+        all: unset;
+        text-align: center;
+        padding: 7px 0;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.06);
+        cursor: pointer;
+        font-size: 11px;
+        letter-spacing: 0.06em;
+        transition: 0.15s;
+      }
+      .btns button:hover {
+        background: rgba(255, 255, 255, 0.14);
+      }
+      #hint {
+        position: fixed;
+        bottom: 22px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 12px;
+        color: var(--dim);
+        padding: 9px 16px;
+        white-space: nowrap;
+        pointer-events: none;
+      }
+      #hint kbd {
+        font-family: inherit;
+        color: var(--fg);
+        background: rgba(255, 255, 255, 0.08);
+        padding: 1px 6px;
+        border-radius: 4px;
+        margin: 0 2px;
+      }
+      #intro {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: radial-gradient(
+          ellipse at center,
+          rgba(5, 6, 12, 0.35),
+          rgba(5, 6, 12, 0.85)
+        );
+        transition: opacity 1.2s;
+        z-index: 10;
+      }
+      #intro.gone {
+        opacity: 0;
+        pointer-events: none;
+      }
+      #intro .card {
+        text-align: center;
+        max-width: 560px;
+        padding: 20px;
+      }
+      #intro h1 {
+        font-weight: 100;
+        font-size: clamp(40px, 7vw, 78px);
+        letter-spacing: 0.12em;
+        margin-left: -0.12em;
+        text-transform: uppercase;
+      }
+      #intro p {
+        color: var(--dim);
+        line-height: 1.7;
+        margin: 18px auto 30px;
+        font-size: 15px;
+        max-width: 460px;
+      }
+      #intro button {
+        all: unset;
+        cursor: pointer;
+        padding: 13px 30px;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.35);
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        font-size: 12px;
+        transition: 0.25s;
+        margin: 0 6px;
+      }
+      #intro button:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: #fff;
+        box-shadow: 0 0 30px rgba(157, 184, 255, 0.35);
+      }
+      #intro button.quiet {
+        border-color: transparent;
+        color: var(--dim);
+      }
+      #intro small {
+        display: block;
+        margin-top: 34px;
+        color: #5d6478;
+        font-size: 11px;
+        letter-spacing: 0.08em;
+      }
+      #toast {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 15px;
+        letter-spacing: 0.08em;
+        color: #fff;
+        opacity: 0;
+        transition: opacity 0.4s;
+        pointer-events: none;
+        text-shadow: 0 0 18px rgba(157, 184, 255, 0.8);
+      }
+      @media (max-width: 700px) {
+        #panel {
+          display: none;
+        }
+        #hint {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="sky" aria-label="שמי הלהקה"></canvas>
 
-<div id="title" class="ui">
-  <h1>Murmuration</h1>
-  <p>Every note is sung by one bird. The flock is the composer.</p>
-</div>
-
-<div id="stats" class="ui glass">
-  <div class="lbl">Flock alignment φ</div>
-  <div class="big" id="phi">0.00</div>
-  <canvas id="spark" width="400" height="76"></canvas>
-  <div class="row">birds <b id="sN">0</b></div>
-  <div class="row">mood <b id="sMood">—</b></div>
-  <div class="row">chord <b id="sChord">—</b></div>
-  <div class="row">notes sung <b id="sNotes">0</b></div>
-  <div class="row">fps <b id="sFps">0</b></div>
-</div>
-
-<div id="panel" class="ui glass">
-  <h2>Flock physics <button id="minBtn" title="Collapse">–</button></h2>
-  <div class="body">
-    <div class="ctl"><label>Birds <span id="vcount"></span></label><input type="range" id="count" min="200" max="4000" step="100"></div>
-    <div class="ctl"><label>Separation <span id="vsep"></span></label><input type="range" id="sep" min="0" max="4" step="0.05"></div>
-    <div class="ctl"><label>Alignment <span id="vali"></span></label><input type="range" id="ali" min="0" max="3" step="0.05"></div>
-    <div class="ctl"><label>Cohesion <span id="vcoh"></span></label><input type="range" id="coh" min="0" max="3" step="0.05"></div>
-    <div class="ctl"><label>Speed <span id="vspeed"></span></label><input type="range" id="speed" min="0.8" max="6" step="0.1"></div>
-    <div class="ctl"><label>Vision radius <span id="vradius"></span></label><input type="range" id="radius" min="14" max="80" step="1"></div>
-    <div class="ctl"><label>Trails <span id="vtrail"></span></label><input type="range" id="trail" min="0.03" max="0.6" step="0.01"></div>
-    <div class="ctl"><label>Tempo <span id="vtempo"></span></label><input type="range" id="tempo" min="50" max="140" step="1"></div>
-    <div class="pals" id="pals"></div>
-    <div class="btns">
-      <button id="bScatter">Scatter ✺</button>
-      <button id="bReset">Reset ↺</button>
-      <button id="bMute">Mute ♪</button>
-      <button id="bSnap">Snapshot ⤓</button>
+    <div id="title" class="ui">
+      <h1>קשקשת</h1>
+      <p>כל צליל מושר על ידי ציפור אחת. הלהקה היא המלחינה.</p>
     </div>
-  </div>
-</div>
 
-<div id="hint" class="ui glass">
-  <kbd>hold click</kbd> hawk &nbsp;·&nbsp; <kbd>right-click</kbd>/<kbd>shift</kbd> lure &nbsp;·&nbsp;
-  <kbd>space</kbd> pause &nbsp;·&nbsp; <kbd>M</kbd> mute &nbsp;·&nbsp; <kbd>H</kbd> hide UI &nbsp;·&nbsp; <kbd>1-4</kbd> palette
-</div>
+    <div id="stats" class="ui glass">
+      <div class="lbl">יישור הלהקה φ</div>
+      <div class="big" id="phi" dir="ltr">0.00</div>
+      <canvas id="spark" width="400" height="76"></canvas>
+      <div class="row">ציפורים <b id="sN">0</b></div>
+      <div class="row">מצב רוח <b id="sMood">—</b></div>
+      <div class="row">אקורד <b id="sChord" dir="ltr">—</b></div>
+      <div class="row">צלילים שהושרו <b id="sNotes">0</b></div>
+      <div class="row">פריימים לשנייה <b id="sFps">0</b></div>
+    </div>
 
-<div id="intro">
-  <div class="card">
-    <h1>Murmuration</h1>
-    <p>About 1,600 starlings start out scattered at random. Each one follows three local rules, and together they form a flock that composes its own music as it flies.
-      When the flock is calm, the music gets sparse and slow. If you send in a hawk, the flock scatters and the notes speed up.</p>
-    <button id="go">Begin · sound on</button>
-    <button id="goQuiet" class="quiet">silently</button>
-    <small>no libraries · no samples · a single HTML file</small>
-  </div>
-</div>
-<div id="toast"></div>
+    <div id="panel" class="ui glass">
+      <h2>
+        פיזיקת הלהקה
+        <button id="minBtn" title="כווץ" aria-label="כווץ">–</button>
+      </h2>
+      <div class="body">
+        <div class="ctl">
+          <label>ציפורים <span id="vcount"></span></label
+          ><input type="range" id="count" min="200" max="4000" step="100" />
+        </div>
+        <div class="ctl">
+          <label>הפרדה <span id="vsep"></span></label
+          ><input type="range" id="sep" min="0" max="4" step="0.05" />
+        </div>
+        <div class="ctl">
+          <label>יישור <span id="vali"></span></label
+          ><input type="range" id="ali" min="0" max="3" step="0.05" />
+        </div>
+        <div class="ctl">
+          <label>לכידות <span id="vcoh"></span></label
+          ><input type="range" id="coh" min="0" max="3" step="0.05" />
+        </div>
+        <div class="ctl">
+          <label>מהירות <span id="vspeed"></span></label
+          ><input type="range" id="speed" min="0.8" max="6" step="0.1" />
+        </div>
+        <div class="ctl">
+          <label>רדיוס ראייה <span id="vradius"></span></label
+          ><input type="range" id="radius" min="14" max="80" step="1" />
+        </div>
+        <div class="ctl">
+          <label>שובלים <span id="vtrail"></span></label
+          ><input type="range" id="trail" min="0.03" max="0.6" step="0.01" />
+        </div>
+        <div class="ctl">
+          <label>טמפו <span id="vtempo"></span></label
+          ><input type="range" id="tempo" min="50" max="140" step="1" />
+        </div>
+        <div class="pals" id="pals"></div>
+        <div class="btns">
+          <button id="bScatter">פיזור ✺</button>
+          <button id="bReset">איפוס ↺</button>
+          <button id="bMute">השתקה ♪</button>
+          <button id="bSnap">צילום ⤓</button>
+        </div>
+      </div>
+    </div>
 
-<script>
-'use strict';
-/* =========================================================================
+    <div id="hint" class="ui glass">
+      <kbd>לחיצה ממושכת</kbd> נץ &nbsp;·&nbsp; <kbd>קליק ימני</kbd>/<kbd
+        >Shift</kbd
+      >
+      פיתיון &nbsp;·&nbsp; <kbd>רווח</kbd> השהיה &nbsp;·&nbsp;
+      <kbd>M</kbd> השתקה &nbsp;·&nbsp; <kbd>H</kbd> הסתרת ממשק &nbsp;·&nbsp;
+      <kbd>1-4</kbd> ערכת צבעים
+    </div>
+
+    <div id="intro">
+      <div class="card">
+        <h1>קשקשת</h1>
+        <p>
+          כ־1,600 זרזירים מתחילים מפוזרים באקראי. כל אחד מהם מציית לשלושה כללים
+          מקומיים, ויחד הם יוצרים להקה שמלחינה מוזיקה משלה תוך כדי מעוף. כשהלהקה
+          רגועה, המוזיקה דלילה ואיטית. שלחו נץ, והלהקה תתפזר והצלילים יואצו.
+        </p>
+        <button id="go">התחלה · עם צליל</button>
+        <button id="goQuiet" class="quiet">בשקט</button>
+        <small>בלי ספריות · בלי דגימות · קובץ HTML יחיד</small>
+      </div>
+    </div>
+    <div id="toast"></div>
+
+    <script>
+      "use strict";
+      /* =========================================================================
    MURMURATION — boids flocking (Reynolds, 1987) + generative Web Audio score
    ========================================================================= */
 
-// ---------- parameters ----------
-const P = { count:1600, sep:1.5, ali:1.0, coh:0.9, speed:2.6, radius:34, trail:0.14, tempo:84 };
-const DEFAULTS = {...P};
-const MAXN = 4000;
-const MAX_NEIGHBORS = 28;   // topological cap; real starlings track ~7 neighbours
+      // ---------- parameters ----------
+      const P = {
+        count: 1600,
+        sep: 1.5,
+        ali: 1.0,
+        coh: 0.9,
+        speed: 2.6,
+        radius: 34,
+        trail: 0.14,
+        tempo: 84,
+      };
+      const DEFAULTS = { ...P };
+      const MAXN = 4000;
+      const MAX_NEIGHBORS = 28; // topological cap; real starlings track ~7 neighbours
 
-const PALETTES = [
-  { name:'Dusk',   h0:200, h1:330, s:85, l:66 },
-  { name:'Ember',  h0:350, h1:48,  s:95, l:60 },
-  { name:'Aurora', h0:140, h1:210, s:80, l:62 },
-  { name:'Ghost',  h0:215, h1:235, s:25, l:82 },
-];
-let palIdx = 0;
+      const PALETTES = [
+        { name: "דמדומים", h0: 200, h1: 330, s: 85, l: 66 },
+        { name: "גחלים", h0: 350, h1: 48, s: 95, l: 60 },
+        { name: "זוהר צפוני", h0: 140, h1: 210, s: 80, l: 62 },
+        { name: "רוח רפאים", h0: 215, h1: 235, s: 25, l: 82 },
+      ];
+      let palIdx = 0;
 
-// ---------- canvas ----------
-const cvs = document.getElementById('sky');
-const g = cvs.getContext('2d', { alpha:false });
-let W = 0, H = 0, DPR = 1;
+      // ---------- canvas ----------
+      const cvs = document.getElementById("sky");
+      const g = cvs.getContext("2d", { alpha: false });
+      let W = 0,
+        H = 0,
+        DPR = 1;
 
-// ---------- boid state (structure of arrays for speed) ----------
-const X = new Float32Array(MAXN), Y = new Float32Array(MAXN);
-const VX = new Float32Array(MAXN), VY = new Float32Array(MAXN);
-const NX = new Float32Array(MAXN), NY = new Float32Array(MAXN);  // next velocity
-let N = 0;
+      // ---------- boid state (structure of arrays for speed) ----------
+      const X = new Float32Array(MAXN),
+        Y = new Float32Array(MAXN);
+      const VX = new Float32Array(MAXN),
+        VY = new Float32Array(MAXN);
+      const NX = new Float32Array(MAXN),
+        NY = new Float32Array(MAXN); // next velocity
+      let N = 0;
 
-// ---------- spatial hash grid ----------
-let gcols = 1, grows = 1, cellCount, cellStart, cellCursor;
-const cellOf = new Int32Array(MAXN), sorted = new Int32Array(MAXN);
+      // ---------- spatial hash grid ----------
+      let gcols = 1,
+        grows = 1,
+        cellCount,
+        cellStart,
+        cellCursor;
+      const cellOf = new Int32Array(MAXN),
+        sorted = new Int32Array(MAXN);
 
-function buildGrid() {
-  gcols = Math.max(3, Math.floor(W / P.radius));
-  grows = Math.max(3, Math.floor(H / P.radius));
-  const n = gcols * grows + 1;
-  cellCount = new Int32Array(n); cellStart = new Int32Array(n); cellCursor = new Int32Array(n);
-}
+      function buildGrid() {
+        gcols = Math.max(3, Math.floor(W / P.radius));
+        grows = Math.max(3, Math.floor(H / P.radius));
+        const n = gcols * grows + 1;
+        cellCount = new Int32Array(n);
+        cellStart = new Int32Array(n);
+        cellCursor = new Int32Array(n);
+      }
 
-function resize() {
-  DPR = Math.min(2, window.devicePixelRatio || 1);
-  W = window.innerWidth; H = window.innerHeight;
-  cvs.width = Math.round(W * DPR); cvs.height = Math.round(H * DPR);
-  g.setTransform(DPR, 0, 0, DPR, 0, 0);
-  g.fillStyle = '#05060c'; g.fillRect(0, 0, W, H);
-  buildGrid();
-  for (let i = 0; i < N; i++) { X[i] = ((X[i] % W) + W) % W; Y[i] = ((Y[i] % H) + H) % H; }
-}
-
-function spawnBird(i, x, y) {
-  X[i] = x ?? Math.random() * W; Y[i] = y ?? Math.random() * H;
-  const a = Math.random() * Math.PI * 2, s = P.speed * (0.7 + Math.random() * 0.6);
-  VX[i] = Math.cos(a) * s; VY[i] = Math.sin(a) * s;
-}
-function setCount(n) {
-  n = Math.min(MAXN, n);
-  for (let i = N; i < n; i++) spawnBird(i);
-  N = n;
-}
-function resetFlock() { N = 0; setCount(P.count); phiHist.fill(0); }
-
-// ---------- interaction ----------
-const ptr = { x:0, y:0, down:false, lure:false, inside:false };
-let shiftHeld = false;
-let panic = 0;          // smoothed fraction of flock fleeing the hawk
-let paused = false;
-
-// ---------- simulation step ----------
-function step(dt) {
-  // 1. bin birds into grid cells (counting sort)
-  const nCells = gcols * grows;
-  cellCount.fill(0);
-  const cw = gcols / W, ch = grows / H;
-  for (let i = 0; i < N; i++) {
-    let cx = (X[i] * cw) | 0, cy = (Y[i] * ch) | 0;
-    if (cx >= gcols) cx = gcols - 1; if (cy >= grows) cy = grows - 1;
-    const c = cy * gcols + cx; cellOf[i] = c; cellCount[c]++;
-  }
-  let s = 0;
-  for (let c = 0; c < nCells; c++) { cellStart[c] = s; cellCursor[c] = s; s += cellCount[c]; }
-  cellStart[nCells] = s;
-  for (let i = 0; i < N; i++) sorted[cellCursor[cellOf[i]]++] = i;
-
-  // 2. steering
-  const r2 = P.radius * P.radius, sr = P.radius * 0.45, sr2 = sr * sr;
-  const hw = W / 2, hh = H / 2;
-  const kA = 0.06 * P.ali, kC = 0.0028 * P.coh, kS = 1.1 * P.sep;
-  const maxF = 0.22 * (P.speed / 2.6);
-  const vmax = P.speed * 1.35, vmin = P.speed * 0.55;
-  const hawk = ptr.down && !ptr.lure && !shiftHeld, lure = ptr.down && (ptr.lure || shiftHeld);
-  const HR = 170, HR2 = HR * HR;
-  let fleeing = 0;
-
-  for (let i = 0; i < N; i++) {
-    const xi = X[i], yi = Y[i], vxi = VX[i], vyi = VY[i];
-    const c = cellOf[i], cx = c % gcols, cy = (c / gcols) | 0;
-    let n = 0, ax = 0, ay = 0, px = 0, py = 0, sx = 0, sy = 0;
-    outer:
-    for (let oy = -1; oy <= 1; oy++) {
-      const row = ((cy + oy + grows) % grows) * gcols;
-      for (let ox = -1; ox <= 1; ox++) {
-        const cc = row + (cx + ox + gcols) % gcols;
-        for (let k = cellStart[cc], e = cellStart[cc + 1]; k < e; k++) {
-          const j = sorted[k]; if (j === i) continue;
-          let dx = X[j] - xi, dy = Y[j] - yi;
-          if (dx > hw) dx -= W; else if (dx < -hw) dx += W;     // toroidal world
-          if (dy > hh) dy -= H; else if (dy < -hh) dy += H;
-          const d2 = dx * dx + dy * dy;
-          if (d2 >= r2 || d2 < 1e-4) continue;
-          n++; ax += VX[j]; ay += VY[j]; px += dx; py += dy;
-          if (d2 < sr2) { sx -= dx / d2; sy -= dy / d2; }
-          if (n >= MAX_NEIGHBORS) break outer;
+      function resize() {
+        DPR = Math.min(2, window.devicePixelRatio || 1);
+        W = window.innerWidth;
+        H = window.innerHeight;
+        cvs.width = Math.round(W * DPR);
+        cvs.height = Math.round(H * DPR);
+        g.setTransform(DPR, 0, 0, DPR, 0, 0);
+        g.fillStyle = "#05060c";
+        g.fillRect(0, 0, W, H);
+        buildGrid();
+        for (let i = 0; i < N; i++) {
+          X[i] = ((X[i] % W) + W) % W;
+          Y[i] = ((Y[i] % H) + H) % H;
         }
       }
-    }
-    let fx = 0, fy = 0;
-    if (n) {
-      const inv = 1 / n;
-      fx += (ax * inv - vxi) * kA + px * inv * kC + sx * kS;
-      fy += (ay * inv - vyi) * kA + py * inv * kC + sy * kS;
-    }
-    // gentle turbulence so the sky never fully settles
-    fx += (Math.random() - 0.5) * 0.04; fy += (Math.random() - 0.5) * 0.04;
-    const fm = Math.hypot(fx, fy);
-    if (fm > maxF) { fx *= maxF / fm; fy *= maxF / fm; }
 
-    let top = vmax;
-    if (hawk) {
-      const dx = xi - ptr.x, dy = yi - ptr.y, d2 = dx * dx + dy * dy;
-      if (d2 < HR2) {
-        const d = Math.sqrt(d2) + 0.01, f = (1 - d / HR) * 1.6;
-        fx += dx / d * f; fy += dy / d * f; top = vmax * 2.1; fleeing++;
+      function spawnBird(i, x, y) {
+        X[i] = x ?? Math.random() * W;
+        Y[i] = y ?? Math.random() * H;
+        const a = Math.random() * Math.PI * 2,
+          s = P.speed * (0.7 + Math.random() * 0.6);
+        VX[i] = Math.cos(a) * s;
+        VY[i] = Math.sin(a) * s;
       }
-    } else if (lure) {
-      const dx = ptr.x - xi, dy = ptr.y - yi, d = Math.hypot(dx, dy) + 0.01;
-      fx += dx / d * 0.09; fy += dy / d * 0.09;
-    }
+      function setCount(n) {
+        n = Math.min(MAXN, n);
+        for (let i = N; i < n; i++) spawnBird(i);
+        N = n;
+      }
+      function resetFlock() {
+        N = 0;
+        setCount(P.count);
+        phiHist.fill(0);
+      }
 
-    let nvx = vxi + fx * dt, nvy = vyi + fy * dt;
-    const sp = Math.hypot(nvx, nvy);
-    if (sp > top) { nvx *= top / sp; nvy *= top / sp; }
-    else if (sp < vmin) { nvx *= vmin / (sp + 1e-6); nvy *= vmin / (sp + 1e-6); }
-    NX[i] = nvx; NY[i] = nvy;
-  }
+      // ---------- interaction ----------
+      const ptr = { x: 0, y: 0, down: false, lure: false, inside: false };
+      let shiftHeld = false;
+      let panic = 0; // smoothed fraction of flock fleeing the hawk
+      let paused = false;
 
-  // 3. integrate + measure the order parameter φ = |Σ v̂| / N
-  let ux = 0, uy = 0, spSum = 0;
-  for (let i = 0; i < N; i++) {
-    const vx = NX[i], vy = NY[i];
-    VX[i] = vx; VY[i] = vy;
-    let x = X[i] + vx * dt, y = Y[i] + vy * dt;
-    if (x < 0) x += W; else if (x >= W) x -= W;
-    if (y < 0) y += H; else if (y >= H) y -= H;
-    X[i] = x; Y[i] = y;
-    const sp = Math.hypot(vx, vy) + 1e-6;
-    ux += vx / sp; uy += vy / sp; spSum += sp;
-  }
-  phi = N ? Math.hypot(ux, uy) / N : 0;
-  meanSpeed = N ? spSum / N : 0;
-  panic += ((N ? fleeing / N * 6 : 0) - panic) * 0.08;
-  if (panic > 1) panic = 1;
-}
-let phi = 0, meanSpeed = 0;
+      // ---------- simulation step ----------
+      function step(dt) {
+        // 1. bin birds into grid cells (counting sort)
+        const nCells = gcols * grows;
+        cellCount.fill(0);
+        const cw = gcols / W,
+          ch = grows / H;
+        for (let i = 0; i < N; i++) {
+          let cx = (X[i] * cw) | 0,
+            cy = (Y[i] * ch) | 0;
+          if (cx >= gcols) cx = gcols - 1;
+          if (cy >= grows) cy = grows - 1;
+          const c = cy * gcols + cx;
+          cellOf[i] = c;
+          cellCount[c]++;
+        }
+        let s = 0;
+        for (let c = 0; c < nCells; c++) {
+          cellStart[c] = s;
+          cellCursor[c] = s;
+          s += cellCount[c];
+        }
+        cellStart[nCells] = s;
+        for (let i = 0; i < N; i++) sorted[cellCursor[cellOf[i]]++] = i;
 
-// ---------- rendering ----------
-const NB = 24;                                  // heading-colour buckets
-const bucketIdx = Array.from({ length: NB }, () => new Int32Array(MAXN));
-const bucketLen = new Int32Array(NB);
-let bucketColor = [];
+        // 2. steering
+        const r2 = P.radius * P.radius,
+          sr = P.radius * 0.45,
+          sr2 = sr * sr;
+        const hw = W / 2,
+          hh = H / 2;
+        const kA = 0.06 * P.ali,
+          kC = 0.0028 * P.coh,
+          kS = 1.1 * P.sep;
+        const maxF = 0.22 * (P.speed / 2.6);
+        const vmax = P.speed * 1.35,
+          vmin = P.speed * 0.55;
+        const hawk = ptr.down && !ptr.lure && !shiftHeld,
+          lure = ptr.down && (ptr.lure || shiftHeld);
+        const HR = 170,
+          HR2 = HR * HR;
+        let fleeing = 0;
 
-function buildColors() {
-  const p = PALETTES[palIdx];
-  let span = p.h1 - p.h0; if (span < 0) span += 360;
-  bucketColor = Array.from({ length: NB }, (_, b) => {
-    const t = 0.5 - 0.5 * Math.cos(b / NB * Math.PI * 2);   // continuous around the circle
-    return `hsla(${(p.h0 + span * t) % 360},${p.s}%,${p.l}%,0.85)`;
-  });
-  document.documentElement.style.setProperty('--acc', `hsl(${(p.h0 + span * 0.5) % 360},${p.s}%,${p.l + 8}%)`);
-}
+        for (let i = 0; i < N; i++) {
+          const xi = X[i],
+            yi = Y[i],
+            vxi = VX[i],
+            vyi = VY[i];
+          const c = cellOf[i],
+            cx = c % gcols,
+            cy = (c / gcols) | 0;
+          let n = 0,
+            ax = 0,
+            ay = 0,
+            px = 0,
+            py = 0,
+            sx = 0,
+            sy = 0;
+          outer: for (let oy = -1; oy <= 1; oy++) {
+            const row = ((cy + oy + grows) % grows) * gcols;
+            for (let ox = -1; ox <= 1; ox++) {
+              const cc = row + ((cx + ox + gcols) % gcols);
+              for (let k = cellStart[cc], e = cellStart[cc + 1]; k < e; k++) {
+                const j = sorted[k];
+                if (j === i) continue;
+                let dx = X[j] - xi,
+                  dy = Y[j] - yi;
+                if (dx > hw) dx -= W;
+                else if (dx < -hw) dx += W; // toroidal world
+                if (dy > hh) dy -= H;
+                else if (dy < -hh) dy += H;
+                const d2 = dx * dx + dy * dy;
+                if (d2 >= r2 || d2 < 1e-4) continue;
+                n++;
+                ax += VX[j];
+                ay += VY[j];
+                px += dx;
+                py += dy;
+                if (d2 < sr2) {
+                  sx -= dx / d2;
+                  sy -= dy / d2;
+                }
+                if (n >= MAX_NEIGHBORS) break outer;
+              }
+            }
+          }
+          let fx = 0,
+            fy = 0;
+          if (n) {
+            const inv = 1 / n;
+            fx += (ax * inv - vxi) * kA + px * inv * kC + sx * kS;
+            fy += (ay * inv - vyi) * kA + py * inv * kC + sy * kS;
+          }
+          // gentle turbulence so the sky never fully settles
+          fx += (Math.random() - 0.5) * 0.04;
+          fy += (Math.random() - 0.5) * 0.04;
+          const fm = Math.hypot(fx, fy);
+          if (fm > maxF) {
+            fx *= maxF / fm;
+            fy *= maxF / fm;
+          }
 
-const ripples = [];   // birds that sang: {i, t, x, y, hue, big}
+          let top = vmax;
+          if (hawk) {
+            const dx = xi - ptr.x,
+              dy = yi - ptr.y,
+              d2 = dx * dx + dy * dy;
+            if (d2 < HR2) {
+              const d = Math.sqrt(d2) + 0.01,
+                f = (1 - d / HR) * 1.6;
+              fx += (dx / d) * f;
+              fy += (dy / d) * f;
+              top = vmax * 2.1;
+              fleeing++;
+            }
+          } else if (lure) {
+            const dx = ptr.x - xi,
+              dy = ptr.y - yi,
+              d = Math.hypot(dx, dy) + 0.01;
+            fx += (dx / d) * 0.09;
+            fy += (dy / d) * 0.09;
+          }
 
-function render() {
-  g.globalCompositeOperation = 'source-over';
-  g.fillStyle = `rgba(5,6,12,${P.trail})`;
-  g.fillRect(0, 0, W, H);
+          let nvx = vxi + fx * dt,
+            nvy = vyi + fy * dt;
+          const sp = Math.hypot(nvx, nvy);
+          if (sp > top) {
+            nvx *= top / sp;
+            nvy *= top / sp;
+          } else if (sp < vmin) {
+            nvx *= vmin / (sp + 1e-6);
+            nvy *= vmin / (sp + 1e-6);
+          }
+          NX[i] = nvx;
+          NY[i] = nvy;
+        }
 
-  // hawk / lure aura
-  if (ptr.down) {
-    const isLure = ptr.lure || shiftHeld;
-    const grd = g.createRadialGradient(ptr.x, ptr.y, 0, ptr.x, ptr.y, 170);
-    grd.addColorStop(0, isLure ? 'rgba(120,255,200,0.10)' : 'rgba(255,70,70,0.13)');
-    grd.addColorStop(1, 'rgba(0,0,0,0)');
-    g.fillStyle = grd; g.beginPath(); g.arc(ptr.x, ptr.y, 170, 0, 7); g.fill();
-  }
+        // 3. integrate + measure the order parameter φ = |Σ v̂| / N
+        let ux = 0,
+          uy = 0,
+          spSum = 0;
+        for (let i = 0; i < N; i++) {
+          const vx = NX[i],
+            vy = NY[i];
+          VX[i] = vx;
+          VY[i] = vy;
+          let x = X[i] + vx * dt,
+            y = Y[i] + vy * dt;
+          if (x < 0) x += W;
+          else if (x >= W) x -= W;
+          if (y < 0) y += H;
+          else if (y >= H) y -= H;
+          X[i] = x;
+          Y[i] = y;
+          const sp = Math.hypot(vx, vy) + 1e-6;
+          ux += vx / sp;
+          uy += vy / sp;
+          spSum += sp;
+        }
+        phi = N ? Math.hypot(ux, uy) / N : 0;
+        meanSpeed = N ? spSum / N : 0;
+        panic += ((N ? (fleeing / N) * 6 : 0) - panic) * 0.08;
+        if (panic > 1) panic = 1;
+      }
+      let phi = 0,
+        meanSpeed = 0;
 
-  g.globalCompositeOperation = 'lighter';
-  bucketLen.fill(0);
-  for (let i = 0; i < N; i++) {
-    let b = ((Math.atan2(VY[i], VX[i]) + Math.PI) / (Math.PI * 2) * NB) | 0;
-    if (b >= NB) b = 0;
-    bucketIdx[b][bucketLen[b]++] = i;
-  }
-  const tail = 3.2;
-  g.lineWidth = N > 2500 ? 1.2 : 1.5; g.lineCap = 'round';
-  for (let b = 0; b < NB; b++) {
-    const len = bucketLen[b]; if (!len) continue;
-    const idx = bucketIdx[b];
-    g.strokeStyle = bucketColor[b]; g.beginPath();
-    for (let k = 0; k < len; k++) {
-      const i = idx[k];
-      g.moveTo(X[i], Y[i]); g.lineTo(X[i] - VX[i] * tail, Y[i] - VY[i] * tail);
-    }
-    g.stroke();
-  }
+      // ---------- rendering ----------
+      const NB = 24; // heading-colour buckets
+      const bucketIdx = Array.from({ length: NB }, () => new Int32Array(MAXN));
+      const bucketLen = new Int32Array(NB);
+      let bucketColor = [];
 
-  // singing birds: ripples timed to the audio clock
-  const now = AC ? AC.currentTime : 0;
-  const p = PALETTES[palIdx];
-  for (let r = ripples.length - 1; r >= 0; r--) {
-    const rp = ripples[r], age = now - rp.t;
-    if (age < 0) continue;
-    if (rp.x === undefined) { rp.x = X[rp.i]; rp.y = Y[rp.i]; }
-    const life = rp.big ? 2.2 : 1.4;
-    if (age > life) { ripples.splice(r, 1); continue; }
-    const k = age / life, a = (1 - k) * (1 - k);
-    g.strokeStyle = `hsla(${rp.hue},${p.s}%,75%,${a * 0.9})`;
-    g.lineWidth = rp.big ? 2 : 1.2;
-    g.beginPath(); g.arc(rp.x, rp.y, 3 + Math.sqrt(age) * (rp.big ? 90 : 46), 0, 7); g.stroke();
-    if (age < 0.25) {
-      g.fillStyle = `hsla(${rp.hue},100%,90%,${1 - age * 4})`;
-      g.beginPath(); g.arc(X[rp.i], Y[rp.i], 3.2, 0, 7); g.fill();
-    }
-  }
-}
+      function buildColors() {
+        const p = PALETTES[palIdx];
+        let span = p.h1 - p.h0;
+        if (span < 0) span += 360;
+        bucketColor = Array.from({ length: NB }, (_, b) => {
+          const t = 0.5 - 0.5 * Math.cos((b / NB) * Math.PI * 2); // continuous around the circle
+          return `hsla(${(p.h0 + span * t) % 360},${p.s}%,${p.l}%,0.85)`;
+        });
+        document.documentElement.style.setProperty(
+          "--acc",
+          `hsl(${(p.h0 + span * 0.5) % 360},${p.s}%,${p.l + 8}%)`,
+        );
+      }
 
-// ---------- AUDIO: everything synthesized live ----------
-let AC = null, master, verbSend, delaySend, muted = false, notesSung = 0;
-const midi = m => 440 * Math.pow(2, (m - 69) / 12);
-const NOTE_NAMES = ['C','C♯','D','E♭','E','F','F♯','G','A♭','A','B♭','B'];
+      const ripples = []; // birds that sang: {i, t, x, y, hue, big}
 
-// A-minor pentatonic melody over an Am – F – C – G progression
-const PENTA = [0, 3, 5, 7, 10];
-const MEL_BASE = 57;          // A3
-const MEL_NOTES = [];
-for (let o = 0; o < 3; o++) for (const d of PENTA) MEL_NOTES.push(MEL_BASE + o * 12 + d);
-MEL_NOTES.push(MEL_BASE + 36);
-const CHORDS = [
-  { name:'Am',   pad:[57, 60, 64, 69], bass:33 },
-  { name:'Fmaj7',pad:[53, 57, 60, 64], bass:29 },
-  { name:'C',    pad:[55, 60, 64, 67], bass:36 },
-  { name:'G',    pad:[55, 59, 62, 67], bass:31 },
-];
-let chordNow = 0;
+      function render() {
+        g.globalCompositeOperation = "source-over";
+        g.fillStyle = `rgba(5,6,12,${P.trail})`;
+        g.fillRect(0, 0, W, H);
 
-function makeIR(sec, decay) {
-  const len = Math.floor(AC.sampleRate * sec), buf = AC.createBuffer(2, len, AC.sampleRate);
-  for (let ch = 0; ch < 2; ch++) {
-    const d = buf.getChannelData(ch);
-    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay);
-  }
-  return buf;
-}
+        // hawk / lure aura
+        if (ptr.down) {
+          const isLure = ptr.lure || shiftHeld;
+          const grd = g.createRadialGradient(
+            ptr.x,
+            ptr.y,
+            0,
+            ptr.x,
+            ptr.y,
+            170,
+          );
+          grd.addColorStop(
+            0,
+            isLure ? "rgba(120,255,200,0.10)" : "rgba(255,70,70,0.13)",
+          );
+          grd.addColorStop(1, "rgba(0,0,0,0)");
+          g.fillStyle = grd;
+          g.beginPath();
+          g.arc(ptr.x, ptr.y, 170, 0, 7);
+          g.fill();
+        }
 
-function initAudio() {
-  AC = new (window.AudioContext || window.webkitAudioContext)();
-  const comp = AC.createDynamicsCompressor();
-  comp.threshold.value = -20; comp.ratio.value = 3.5; comp.attack.value = 0.01; comp.release.value = 0.3;
-  master = AC.createGain();
-  master.gain.setValueAtTime(0.0001, AC.currentTime);
-  master.gain.exponentialRampToValueAtTime(0.85, AC.currentTime + 3);
-  master.connect(comp); comp.connect(AC.destination);
+        g.globalCompositeOperation = "lighter";
+        bucketLen.fill(0);
+        for (let i = 0; i < N; i++) {
+          let b =
+            (((Math.atan2(VY[i], VX[i]) + Math.PI) / (Math.PI * 2)) * NB) | 0;
+          if (b >= NB) b = 0;
+          bucketIdx[b][bucketLen[b]++] = i;
+        }
+        const tail = 3.2;
+        g.lineWidth = N > 2500 ? 1.2 : 1.5;
+        g.lineCap = "round";
+        for (let b = 0; b < NB; b++) {
+          const len = bucketLen[b];
+          if (!len) continue;
+          const idx = bucketIdx[b];
+          g.strokeStyle = bucketColor[b];
+          g.beginPath();
+          for (let k = 0; k < len; k++) {
+            const i = idx[k];
+            g.moveTo(X[i], Y[i]);
+            g.lineTo(X[i] - VX[i] * tail, Y[i] - VY[i] * tail);
+          }
+          g.stroke();
+        }
 
-  // reverb (procedurally generated impulse response)
-  const verb = AC.createConvolver(); verb.buffer = makeIR(4.5, 2.8);
-  const verbOut = AC.createGain(); verbOut.gain.value = 0.6;
-  verbSend = AC.createGain(); verbSend.gain.value = 1;
-  verbSend.connect(verb); verb.connect(verbOut); verbOut.connect(master);
+        // singing birds: ripples timed to the audio clock
+        const now = AC ? AC.currentTime : 0;
+        const p = PALETTES[palIdx];
+        for (let r = ripples.length - 1; r >= 0; r--) {
+          const rp = ripples[r],
+            age = now - rp.t;
+          if (age < 0) continue;
+          if (rp.x === undefined) {
+            rp.x = X[rp.i];
+            rp.y = Y[rp.i];
+          }
+          const life = rp.big ? 2.2 : 1.4;
+          if (age > life) {
+            ripples.splice(r, 1);
+            continue;
+          }
+          const k = age / life,
+            a = (1 - k) * (1 - k);
+          g.strokeStyle = `hsla(${rp.hue},${p.s}%,75%,${a * 0.9})`;
+          g.lineWidth = rp.big ? 2 : 1.2;
+          g.beginPath();
+          g.arc(rp.x, rp.y, 3 + Math.sqrt(age) * (rp.big ? 90 : 46), 0, 7);
+          g.stroke();
+          if (age < 0.25) {
+            g.fillStyle = `hsla(${rp.hue},100%,90%,${1 - age * 4})`;
+            g.beginPath();
+            g.arc(X[rp.i], Y[rp.i], 3.2, 0, 7);
+            g.fill();
+          }
+        }
+      }
 
-  // dotted-eighth feedback delay with damping
-  const delay = AC.createDelay(3); delay.delayTime.value = (60 / P.tempo) * 0.75;
-  const fb = AC.createGain(); fb.gain.value = 0.36;
-  const damp = AC.createBiquadFilter(); damp.type = 'lowpass'; damp.frequency.value = 2400;
-  const dOut = AC.createGain(); dOut.gain.value = 0.32;
-  delaySend = AC.createGain(); delaySend.gain.value = 1;
-  delaySend.connect(delay); delay.connect(damp); damp.connect(fb); fb.connect(delay);
-  damp.connect(dOut); dOut.connect(master); dOut.connect(verbSend);
-  window._delay = delay;
+      // ---------- AUDIO: everything synthesized live ----------
+      let AC = null,
+        master,
+        verbSend,
+        delaySend,
+        muted = false,
+        notesSung = 0;
+      const midi = (m) => 440 * Math.pow(2, (m - 69) / 12);
+      const NOTE_NAMES = [
+        "C",
+        "C♯",
+        "D",
+        "E♭",
+        "E",
+        "F",
+        "F♯",
+        "G",
+        "A♭",
+        "A",
+        "B♭",
+        "B",
+      ];
 
-  nextT = AC.currentTime + 0.15; stepNo = 0;
-  setInterval(scheduler, 25);
-}
+      // A-minor pentatonic melody over an Am – F – C – G progression
+      const PENTA = [0, 3, 5, 7, 10];
+      const MEL_BASE = 57; // A3
+      const MEL_NOTES = [];
+      for (let o = 0; o < 3; o++)
+        for (const d of PENTA) MEL_NOTES.push(MEL_BASE + o * 12 + d);
+      MEL_NOTES.push(MEL_BASE + 36);
+      const CHORDS = [
+        { name: "Am", pad: [57, 60, 64, 69], bass: 33 },
+        { name: "Fmaj7", pad: [53, 57, 60, 64], bass: 29 },
+        { name: "C", pad: [55, 60, 64, 67], bass: 36 },
+        { name: "G", pad: [55, 59, 62, 67], bass: 31 },
+      ];
+      let chordNow = 0;
 
-function voiceOut(node, pan, wet) {
-  const p = AC.createStereoPanner(); p.pan.value = pan;
-  node.connect(p); p.connect(master);
-  const s1 = AC.createGain(); s1.gain.value = wet; p.connect(s1); s1.connect(verbSend);
-  const s2 = AC.createGain(); s2.gain.value = wet * 0.7; p.connect(s2); s2.connect(delaySend);
-}
+      function makeIR(sec, decay) {
+        const len = Math.floor(AC.sampleRate * sec),
+          buf = AC.createBuffer(2, len, AC.sampleRate);
+        for (let ch = 0; ch < 2; ch++) {
+          const d = buf.getChannelData(ch);
+          for (let i = 0; i < len; i++)
+            d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay);
+        }
+        return buf;
+      }
 
-function pluck(t, f, pan, vel, bright, len) {
-  const o1 = AC.createOscillator(); o1.type = 'triangle'; o1.frequency.value = f;
-  const o2 = AC.createOscillator(); o2.type = 'sine'; o2.frequency.value = f * 2.0;
-  const o3 = AC.createOscillator(); o3.type = 'sine'; o3.frequency.value = f * 3.01;  // faint bell partial
-  const g2 = AC.createGain(); g2.gain.value = 0.35;
-  const g3 = AC.createGain();
-  g3.gain.setValueAtTime(0.18, t); g3.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
-  const flt = AC.createBiquadFilter(); flt.type = 'lowpass'; flt.Q.value = 2;
-  flt.frequency.setValueAtTime(bright, t);
-  flt.frequency.exponentialRampToValueAtTime(Math.max(250, bright * 0.2), t + len * 0.6);
-  const env = AC.createGain();
-  env.gain.setValueAtTime(0.0001, t);
-  env.gain.exponentialRampToValueAtTime(vel, t + 0.005);
-  env.gain.exponentialRampToValueAtTime(0.0001, t + len);
-  o1.connect(flt); o2.connect(g2); g2.connect(flt); o3.connect(g3); g3.connect(flt);
-  flt.connect(env); voiceOut(env, pan, 0.55);
-  for (const o of [o1, o2, o3]) { o.start(t); o.stop(t + len + 0.05); }
-}
+      function initAudio() {
+        AC = new (window.AudioContext || window.webkitAudioContext)();
+        const comp = AC.createDynamicsCompressor();
+        comp.threshold.value = -20;
+        comp.ratio.value = 3.5;
+        comp.attack.value = 0.01;
+        comp.release.value = 0.3;
+        master = AC.createGain();
+        master.gain.setValueAtTime(0.0001, AC.currentTime);
+        master.gain.exponentialRampToValueAtTime(0.85, AC.currentTime + 3);
+        master.connect(comp);
+        comp.connect(AC.destination);
 
-function padChord(t, chord, dur) {
-  const f = AC.createBiquadFilter(); f.type = 'lowpass'; f.Q.value = 0.6;
-  f.frequency.setValueAtTime(500, t);
-  f.frequency.linearRampToValueAtTime(1100, t + dur * 0.5);
-  f.frequency.linearRampToValueAtTime(600, t + dur + 2.5);
-  const env = AC.createGain();
-  env.gain.setValueAtTime(0.0001, t);
-  env.gain.linearRampToValueAtTime(0.055, t + 2.2);
-  env.gain.setValueAtTime(0.055, t + dur);
-  env.gain.linearRampToValueAtTime(0.0001, t + dur + 3);
-  f.connect(env); voiceOut(env, 0, 0.9);
-  for (const m of chord.pad) for (const det of [-7, 7]) {
-    const o = AC.createOscillator(); o.type = 'sawtooth';
-    o.frequency.value = midi(m); o.detune.value = det + (Math.random() - 0.5) * 4;
-    o.connect(f); o.start(t); o.stop(t + dur + 3.1);
-  }
-}
+        // reverb (procedurally generated impulse response)
+        const verb = AC.createConvolver();
+        verb.buffer = makeIR(4.5, 2.8);
+        const verbOut = AC.createGain();
+        verbOut.gain.value = 0.6;
+        verbSend = AC.createGain();
+        verbSend.gain.value = 1;
+        verbSend.connect(verb);
+        verb.connect(verbOut);
+        verbOut.connect(master);
 
-function bass(t, m, vel) {
-  const o = AC.createOscillator(); o.type = 'sine'; o.frequency.value = midi(m);
-  const o2 = AC.createOscillator(); o2.type = 'triangle'; o2.frequency.value = midi(m + 12);
-  const g2 = AC.createGain(); g2.gain.value = 0.25;
-  const env = AC.createGain();
-  env.gain.setValueAtTime(0.0001, t);
-  env.gain.exponentialRampToValueAtTime(vel, t + 0.02);
-  env.gain.exponentialRampToValueAtTime(0.0001, t + 1.8);
-  o.connect(env); o2.connect(g2); g2.connect(env); voiceOut(env, 0, 0.2);
-  o.start(t); o2.start(t); o.stop(t + 1.9); o2.stop(t + 1.9);
-}
+        // dotted-eighth feedback delay with damping
+        const delay = AC.createDelay(3);
+        delay.delayTime.value = (60 / P.tempo) * 0.75;
+        const fb = AC.createGain();
+        fb.gain.value = 0.36;
+        const damp = AC.createBiquadFilter();
+        damp.type = "lowpass";
+        damp.frequency.value = 2400;
+        const dOut = AC.createGain();
+        dOut.gain.value = 0.32;
+        delaySend = AC.createGain();
+        delaySend.gain.value = 1;
+        delaySend.connect(delay);
+        delay.connect(damp);
+        damp.connect(fb);
+        fb.connect(delay);
+        damp.connect(dOut);
+        dOut.connect(master);
+        dOut.connect(verbSend);
+        window._delay = delay;
 
-let nextT = 0, stepNo = 0;
-function scheduler() {
-  if (!AC || paused) return;
-  if (nextT < AC.currentTime - 0.2) nextT = AC.currentTime + 0.05;   // recover from background-tab throttling
-  const sixteenth = 60 / P.tempo / 4;
-  while (nextT < AC.currentTime + 0.12) { playStep(stepNo, nextT, sixteenth); nextT += sixteenth; stepNo++; }
-}
+        nextT = AC.currentTime + 0.15;
+        stepNo = 0;
+        setInterval(scheduler, 25);
+      }
 
-function playStep(s, t, sixteenth) {
-  const inBar = s % 16;
-  if (s % 32 === 0) {
-    chordNow = (s / 32) % CHORDS.length;
-    padChord(t, CHORDS[chordNow], 32 * sixteenth);
-  }
-  const ch = CHORDS[chordNow];
-  if (inBar === 0) bass(t, ch.bass, 0.32);
-  if (inBar === 10) bass(t, ch.bass, 0.18);
-  if (inBar === 14 && phi < 0.5) bass(t, ch.bass + 7, 0.14);
+      function voiceOut(node, pan, wet) {
+        const p = AC.createStereoPanner();
+        p.pan.value = pan;
+        node.connect(p);
+        p.connect(master);
+        const s1 = AC.createGain();
+        s1.gain.value = wet;
+        p.connect(s1);
+        s1.connect(verbSend);
+        const s2 = AC.createGain();
+        s2.gain.value = wet * 0.7;
+        p.connect(s2);
+        s2.connect(delaySend);
+      }
 
-  // the flock's mood drives the melody
-  const chaos = 1 - phi;
-  let prob = 0.06 + chaos * 0.42 + panic * 0.6;
-  if (inBar % 4 === 0) prob += 0.18; else if (inBar % 2 === 1) prob *= 0.55;
-  const voices = panic > 0.4 && Math.random() < panic ? 2 : 1;
-  for (let v = 0; v < voices; v++) {
-    if (Math.random() >= prob || !N) continue;
-    const i = (Math.random() * N) | 0;            // pick one bird to sing
-    let idx = Math.floor((1 - Y[i] / H) * MEL_NOTES.length);
-    idx = Math.max(0, Math.min(MEL_NOTES.length - 1, idx));
-    let m = MEL_NOTES[idx];
-    if (panic > 0.5 && Math.random() < 0.5) m += 12;
-    const pan = (X[i] / W) * 1.6 - 0.8;
-    const bright = 900 + (meanSpeed / P.speed) * 1400 + panic * 3200;
-    const big = inBar === 0 && v === 0;
-    const len = (phi > 0.75 ? 2.4 : 1.5) - panic * 0.8;
-    pluck(t, midi(m), pan, (big ? 0.2 : 0.11) + Math.random() * 0.06, bright, len);
-    const pal = PALETTES[palIdx];
-    let span = pal.h1 - pal.h0; if (span < 0) span += 360;
-    ripples.push({ i, t, hue: (pal.h0 + span * (idx / MEL_NOTES.length)) % 360, big });
-    notesSung++;
-    lastNote = NOTE_NAMES[m % 12] + (Math.floor(m / 12) - 1);
-  }
-}
-let lastNote = '';
+      function pluck(t, f, pan, vel, bright, len) {
+        const o1 = AC.createOscillator();
+        o1.type = "triangle";
+        o1.frequency.value = f;
+        const o2 = AC.createOscillator();
+        o2.type = "sine";
+        o2.frequency.value = f * 2.0;
+        const o3 = AC.createOscillator();
+        o3.type = "sine";
+        o3.frequency.value = f * 3.01; // faint bell partial
+        const g2 = AC.createGain();
+        g2.gain.value = 0.35;
+        const g3 = AC.createGain();
+        g3.gain.setValueAtTime(0.18, t);
+        g3.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+        const flt = AC.createBiquadFilter();
+        flt.type = "lowpass";
+        flt.Q.value = 2;
+        flt.frequency.setValueAtTime(bright, t);
+        flt.frequency.exponentialRampToValueAtTime(
+          Math.max(250, bright * 0.2),
+          t + len * 0.6,
+        );
+        const env = AC.createGain();
+        env.gain.setValueAtTime(0.0001, t);
+        env.gain.exponentialRampToValueAtTime(vel, t + 0.005);
+        env.gain.exponentialRampToValueAtTime(0.0001, t + len);
+        o1.connect(flt);
+        o2.connect(g2);
+        g2.connect(flt);
+        o3.connect(g3);
+        g3.connect(flt);
+        flt.connect(env);
+        voiceOut(env, pan, 0.55);
+        for (const o of [o1, o2, o3]) {
+          o.start(t);
+          o.stop(t + len + 0.05);
+        }
+      }
 
-function setMuted(m) {
-  muted = m;
-  if (AC) master.gain.setTargetAtTime(m ? 0.0001 : 0.85, AC.currentTime, 0.15);
-  document.getElementById('bMute').textContent = m ? 'Unmute ♪' : 'Mute ♪';
-  toast(m ? 'muted' : 'sound on');
-}
+      function padChord(t, chord, dur) {
+        const f = AC.createBiquadFilter();
+        f.type = "lowpass";
+        f.Q.value = 0.6;
+        f.frequency.setValueAtTime(500, t);
+        f.frequency.linearRampToValueAtTime(1100, t + dur * 0.5);
+        f.frequency.linearRampToValueAtTime(600, t + dur + 2.5);
+        const env = AC.createGain();
+        env.gain.setValueAtTime(0.0001, t);
+        env.gain.linearRampToValueAtTime(0.055, t + 2.2);
+        env.gain.setValueAtTime(0.055, t + dur);
+        env.gain.linearRampToValueAtTime(0.0001, t + dur + 3);
+        f.connect(env);
+        voiceOut(env, 0, 0.9);
+        for (const m of chord.pad)
+          for (const det of [-7, 7]) {
+            const o = AC.createOscillator();
+            o.type = "sawtooth";
+            o.frequency.value = midi(m);
+            o.detune.value = det + (Math.random() - 0.5) * 4;
+            o.connect(f);
+            o.start(t);
+            o.stop(t + dur + 3.1);
+          }
+      }
 
-// ---------- HUD ----------
-const spark = document.getElementById('spark'), sg = spark.getContext('2d');
-const phiHist = new Float32Array(200);
-let histPos = 0;
-const $ = id => document.getElementById(id);
+      function bass(t, m, vel) {
+        const o = AC.createOscillator();
+        o.type = "sine";
+        o.frequency.value = midi(m);
+        const o2 = AC.createOscillator();
+        o2.type = "triangle";
+        o2.frequency.value = midi(m + 12);
+        const g2 = AC.createGain();
+        g2.gain.value = 0.25;
+        const env = AC.createGain();
+        env.gain.setValueAtTime(0.0001, t);
+        env.gain.exponentialRampToValueAtTime(vel, t + 0.02);
+        env.gain.exponentialRampToValueAtTime(0.0001, t + 1.8);
+        o.connect(env);
+        o2.connect(g2);
+        g2.connect(env);
+        voiceOut(env, 0, 0.2);
+        o.start(t);
+        o2.start(t);
+        o.stop(t + 1.9);
+        o2.stop(t + 1.9);
+      }
 
-function drawSpark() {
-  const w = spark.width, h = spark.height;
-  sg.clearRect(0, 0, w, h);
-  const acc = getComputedStyle(document.documentElement).getPropertyValue('--acc');
-  const grd = sg.createLinearGradient(0, 0, 0, h);
-  grd.addColorStop(0, acc); grd.addColorStop(1, 'rgba(0,0,0,0)');
-  sg.beginPath(); sg.moveTo(0, h);
-  for (let k = 0; k < phiHist.length; k++) {
-    const v = phiHist[(histPos + k) % phiHist.length];
-    sg.lineTo(k / (phiHist.length - 1) * w, h - v * (h - 4) - 2);
-  }
-  sg.lineTo(w, h); sg.closePath();
-  sg.globalAlpha = 0.25; sg.fillStyle = grd; sg.fill();
-  sg.globalAlpha = 1; sg.strokeStyle = acc; sg.lineWidth = 2;
-  sg.beginPath();
-  for (let k = 0; k < phiHist.length; k++) {
-    const v = phiHist[(histPos + k) % phiHist.length], x = k / (phiHist.length - 1) * w, y = h - v * (h - 4) - 2;
-    k ? sg.lineTo(x, y) : sg.moveTo(x, y);
-  }
-  sg.stroke();
-}
+      let nextT = 0,
+        stepNo = 0;
+      function scheduler() {
+        if (!AC || paused) return;
+        if (nextT < AC.currentTime - 0.2) nextT = AC.currentTime + 0.05; // recover from background-tab throttling
+        const sixteenth = 60 / P.tempo / 4;
+        while (nextT < AC.currentTime + 0.12) {
+          playStep(stepNo, nextT, sixteenth);
+          nextT += sixteenth;
+          stepNo++;
+        }
+      }
 
-function mood() {
-  if (panic > 0.25) return 'panic';
-  if (phi > 0.85) return 'serene';
-  if (phi > 0.6) return 'flowing';
-  if (phi > 0.3) return 'gathering';
-  return 'scattered';
-}
+      function playStep(s, t, sixteenth) {
+        const inBar = s % 16;
+        if (s % 32 === 0) {
+          chordNow = (s / 32) % CHORDS.length;
+          padChord(t, CHORDS[chordNow], 32 * sixteenth);
+        }
+        const ch = CHORDS[chordNow];
+        if (inBar === 0) bass(t, ch.bass, 0.32);
+        if (inBar === 10) bass(t, ch.bass, 0.18);
+        if (inBar === 14 && phi < 0.5) bass(t, ch.bass + 7, 0.14);
 
-let toastTimer;
-function toast(msg) {
-  const t = $('toast'); t.textContent = msg; t.style.opacity = 1;
-  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.style.opacity = 0, 900);
-}
+        // the flock's mood drives the melody
+        const chaos = 1 - phi;
+        let prob = 0.06 + chaos * 0.42 + panic * 0.6;
+        if (inBar % 4 === 0) prob += 0.18;
+        else if (inBar % 2 === 1) prob *= 0.55;
+        const voices = panic > 0.4 && Math.random() < panic ? 2 : 1;
+        for (let v = 0; v < voices; v++) {
+          if (Math.random() >= prob || !N) continue;
+          const i = (Math.random() * N) | 0; // pick one bird to sing
+          let idx = Math.floor((1 - Y[i] / H) * MEL_NOTES.length);
+          idx = Math.max(0, Math.min(MEL_NOTES.length - 1, idx));
+          let m = MEL_NOTES[idx];
+          if (panic > 0.5 && Math.random() < 0.5) m += 12;
+          const pan = (X[i] / W) * 1.6 - 0.8;
+          const bright = 900 + (meanSpeed / P.speed) * 1400 + panic * 3200;
+          const big = inBar === 0 && v === 0;
+          const len = (phi > 0.75 ? 2.4 : 1.5) - panic * 0.8;
+          pluck(
+            t,
+            midi(m),
+            pan,
+            (big ? 0.2 : 0.11) + Math.random() * 0.06,
+            bright,
+            len,
+          );
+          const pal = PALETTES[palIdx];
+          let span = pal.h1 - pal.h0;
+          if (span < 0) span += 360;
+          ripples.push({
+            i,
+            t,
+            hue: (pal.h0 + span * (idx / MEL_NOTES.length)) % 360,
+            big,
+          });
+          notesSung++;
+          lastNote = NOTE_NAMES[m % 12] + (Math.floor(m / 12) - 1);
+        }
+      }
+      let lastNote = "";
 
-// ---------- controls ----------
-const fmt = { count: v => v, sep: v => (+v).toFixed(2), ali: v => (+v).toFixed(2), coh: v => (+v).toFixed(2),
-  speed: v => (+v).toFixed(1), radius: v => v + 'px', trail: v => (+v).toFixed(2), tempo: v => v + ' bpm' };
-function syncControls() {
-  for (const k in fmt) { $(k).value = P[k]; $('v' + k).textContent = fmt[k](P[k]); }
-}
-for (const k in fmt) {
-  $(k).addEventListener('input', e => {
-    P[k] = +e.target.value; $('v' + k).textContent = fmt[k](P[k]);
-    if (k === 'count') { if (P.count > N) setCount(P.count); else N = P.count; }
-    if (k === 'radius') buildGrid();
-    if (k === 'tempo' && window._delay) window._delay.delayTime.setTargetAtTime((60 / P.tempo) * 0.75, AC.currentTime, 0.2);
-  });
-}
-PALETTES.forEach((p, i) => {
-  const d = document.createElement('div');
-  d.className = 'pal'; d.title = p.name;
-  let span = p.h1 - p.h0; if (span < 0) span += 360;
-  d.style.background = `linear-gradient(90deg,hsl(${p.h0},${p.s}%,${p.l}%),hsl(${(p.h0 + span / 2) % 360},${p.s}%,${p.l}%),hsl(${p.h1},${p.s}%,${p.l}%))`;
-  d.onclick = () => setPalette(i);
-  $('pals').appendChild(d);
-});
-function setPalette(i) {
-  palIdx = i; buildColors();
-  document.querySelectorAll('.pal').forEach((el, k) => el.classList.toggle('on', k === i));
-  toast(PALETTES[i].name);
-}
-function scatter() {
-  for (let i = 0; i < N; i++) {
-    const a = Math.random() * Math.PI * 2, s = P.speed * (1 + Math.random());
-    VX[i] = Math.cos(a) * s; VY[i] = Math.sin(a) * s;
-  }
-  toast('scatter');
-}
-function snapshot() {
-  const a = document.createElement('a');
-  a.download = `murmuration-${Date.now()}.png`; a.href = cvs.toDataURL('image/png'); a.click();
-  toast('saved');
-}
-$('bScatter').onclick = scatter;
-$('bReset').onclick = () => { Object.assign(P, DEFAULTS); syncControls(); buildGrid(); resetFlock(); toast('reset'); };
-$('bMute').onclick = () => setMuted(!muted);
-$('bSnap').onclick = snapshot;
-$('minBtn').onclick = () => { const p = $('panel'); p.classList.toggle('min'); $('minBtn').textContent = p.classList.contains('min') ? '+' : '–'; };
+      function setMuted(m) {
+        muted = m;
+        if (AC)
+          master.gain.setTargetAtTime(m ? 0.0001 : 0.85, AC.currentTime, 0.15);
+        document.getElementById("bMute").textContent = m
+          ? "ביטול השתקה ♪"
+          : "השתקה ♪";
+        toast(m ? "מושתק" : "הצליל פועל");
+      }
 
-cvs.addEventListener('pointerdown', e => {
-  ptr.down = true; ptr.lure = e.button === 2; ptr.x = e.clientX; ptr.y = e.clientY;
-  cvs.setPointerCapture(e.pointerId);
-});
-cvs.addEventListener('pointermove', e => { ptr.x = e.clientX; ptr.y = e.clientY; });
-const up = () => { ptr.down = false; ptr.lure = false; };
-cvs.addEventListener('pointerup', up); cvs.addEventListener('pointercancel', up);
-cvs.addEventListener('contextmenu', e => e.preventDefault());
+      // ---------- HUD ----------
+      const spark = document.getElementById("spark"),
+        sg = spark.getContext("2d");
+      const phiHist = new Float32Array(200);
+      let histPos = 0;
+      const $ = (id) => document.getElementById(id);
 
-window.addEventListener('keydown', e => {
-  if (e.key === 'Shift') shiftHeld = true;
-  if (!$('intro').classList.contains('gone')) return;
-  const k = e.key.toLowerCase();
-  if (k === ' ') { e.preventDefault(); paused = !paused; toast(paused ? 'paused' : 'resume');
-    if (AC) paused ? AC.suspend() : AC.resume(); }
-  else if (k === 'm') setMuted(!muted);
-  else if (k === 'h') document.body.classList.toggle('hide');
-  else if (k === 'r') $('bReset').click();
-  else if (k === 'x') scatter();
-  else if (k === 's') snapshot();
-  else if (k >= '1' && k <= '4') setPalette(+k - 1);
-});
-window.addEventListener('keyup', e => { if (e.key === 'Shift') shiftHeld = false; });
-window.addEventListener('blur', () => { shiftHeld = false; up(); });
-window.addEventListener('resize', resize);
+      function drawSpark() {
+        const w = spark.width,
+          h = spark.height;
+        sg.clearRect(0, 0, w, h);
+        const acc = getComputedStyle(document.documentElement).getPropertyValue(
+          "--acc",
+        );
+        const grd = sg.createLinearGradient(0, 0, 0, h);
+        grd.addColorStop(0, acc);
+        grd.addColorStop(1, "rgba(0,0,0,0)");
+        sg.beginPath();
+        sg.moveTo(0, h);
+        for (let k = 0; k < phiHist.length; k++) {
+          const v = phiHist[(histPos + k) % phiHist.length];
+          sg.lineTo((k / (phiHist.length - 1)) * w, h - v * (h - 4) - 2);
+        }
+        sg.lineTo(w, h);
+        sg.closePath();
+        sg.globalAlpha = 0.25;
+        sg.fillStyle = grd;
+        sg.fill();
+        sg.globalAlpha = 1;
+        sg.strokeStyle = acc;
+        sg.lineWidth = 2;
+        sg.beginPath();
+        for (let k = 0; k < phiHist.length; k++) {
+          const v = phiHist[(histPos + k) % phiHist.length],
+            x = (k / (phiHist.length - 1)) * w,
+            y = h - v * (h - 4) - 2;
+          k ? sg.lineTo(x, y) : sg.moveTo(x, y);
+        }
+        sg.stroke();
+      }
 
-function begin(sound) {
-  $('intro').classList.add('gone');
-  if (sound) { try { initAudio(); } catch (err) { console.warn('Audio unavailable', err); } }
-  else $('bMute').disabled = true;
-}
-$('go').onclick = () => begin(true);
-$('goQuiet').onclick = () => begin(false);
+      function mood() {
+        if (panic > 0.25) return "בהלה";
+        if (phi > 0.85) return "שלווה";
+        if (phi > 0.6) return "זורמת";
+        if (phi > 0.3) return "מתקבצת";
+        return "מפוזרת";
+      }
 
-// ---------- main loop ----------
-let last = performance.now(), fps = 60, frame = 0;
-function loop(now) {
-  const dtMs = Math.min(50, now - last); last = now;
-  fps += (1000 / Math.max(1, dtMs) - fps) * 0.05;
-  if (!paused) {
-    step(Math.min(2, dtMs / 16.667));
-    render();
-  }
-  if (++frame % 3 === 0) {
-    phiHist[histPos] = phi; histPos = (histPos + 1) % phiHist.length;
-    drawSpark();
-    $('phi').textContent = phi.toFixed(2);
-    $('sN').textContent = N.toLocaleString();
-    $('sMood').textContent = mood();
-    $('sChord').textContent = AC ? CHORDS[chordNow].name + (lastNote ? ' · ' + lastNote : '') : 'silent';
-    $('sNotes').textContent = notesSung.toLocaleString();
-    $('sFps').textContent = Math.round(fps);
-  }
-  requestAnimationFrame(loop);
-}
+      let toastTimer;
+      function toast(msg) {
+        const t = $("toast");
+        t.textContent = msg;
+        t.style.opacity = 1;
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => (t.style.opacity = 0), 900);
+      }
 
-// ---------- boot ----------
-resize();
-buildColors();
-syncControls();
-setPalette(0); $('toast').style.opacity = 0;
-resetFlock();
-requestAnimationFrame(loop);
-</script>
-</body>
+      // ---------- controls ----------
+      const fmt = {
+        count: (v) => v,
+        sep: (v) => (+v).toFixed(2),
+        ali: (v) => (+v).toFixed(2),
+        coh: (v) => (+v).toFixed(2),
+        speed: (v) => (+v).toFixed(1),
+        radius: (v) => v + "px",
+        trail: (v) => (+v).toFixed(2),
+        tempo: (v) => v + " bpm",
+      };
+      function syncControls() {
+        for (const k in fmt) {
+          $(k).value = P[k];
+          $("v" + k).textContent = fmt[k](P[k]);
+        }
+      }
+      for (const k in fmt) {
+        $(k).addEventListener("input", (e) => {
+          P[k] = +e.target.value;
+          $("v" + k).textContent = fmt[k](P[k]);
+          if (k === "count") {
+            if (P.count > N) setCount(P.count);
+            else N = P.count;
+          }
+          if (k === "radius") buildGrid();
+          if (k === "tempo" && window._delay)
+            window._delay.delayTime.setTargetAtTime(
+              (60 / P.tempo) * 0.75,
+              AC.currentTime,
+              0.2,
+            );
+        });
+      }
+      PALETTES.forEach((p, i) => {
+        const d = document.createElement("div");
+        d.className = "pal";
+        d.title = p.name;
+        let span = p.h1 - p.h0;
+        if (span < 0) span += 360;
+        d.style.background = `linear-gradient(90deg,hsl(${p.h0},${p.s}%,${p.l}%),hsl(${(p.h0 + span / 2) % 360},${p.s}%,${p.l}%),hsl(${p.h1},${p.s}%,${p.l}%))`;
+        d.onclick = () => setPalette(i);
+        $("pals").appendChild(d);
+      });
+      function setPalette(i) {
+        palIdx = i;
+        buildColors();
+        document
+          .querySelectorAll(".pal")
+          .forEach((el, k) => el.classList.toggle("on", k === i));
+        toast(PALETTES[i].name);
+      }
+      function scatter() {
+        for (let i = 0; i < N; i++) {
+          const a = Math.random() * Math.PI * 2,
+            s = P.speed * (1 + Math.random());
+          VX[i] = Math.cos(a) * s;
+          VY[i] = Math.sin(a) * s;
+        }
+        toast("פיזור");
+      }
+      function snapshot() {
+        const a = document.createElement("a");
+        a.download = `murmuration-${Date.now()}.png`;
+        a.href = cvs.toDataURL("image/png");
+        a.click();
+        toast("נשמר");
+      }
+      $("bScatter").onclick = scatter;
+      $("bReset").onclick = () => {
+        Object.assign(P, DEFAULTS);
+        syncControls();
+        buildGrid();
+        resetFlock();
+        toast("אופס");
+      };
+      $("bMute").onclick = () => setMuted(!muted);
+      $("bSnap").onclick = snapshot;
+      $("minBtn").onclick = () => {
+        const p = $("panel");
+        p.classList.toggle("min");
+        const mn = p.classList.contains("min");
+        $("minBtn").textContent = mn ? "+" : "–";
+        $("minBtn").title = mn ? "הרחב" : "כווץ";
+        $("minBtn").setAttribute("aria-label", $("minBtn").title);
+      };
+
+      cvs.addEventListener("pointerdown", (e) => {
+        ptr.down = true;
+        ptr.lure = e.button === 2;
+        ptr.x = e.clientX;
+        ptr.y = e.clientY;
+        cvs.setPointerCapture(e.pointerId);
+      });
+      cvs.addEventListener("pointermove", (e) => {
+        ptr.x = e.clientX;
+        ptr.y = e.clientY;
+      });
+      const up = () => {
+        ptr.down = false;
+        ptr.lure = false;
+      };
+      cvs.addEventListener("pointerup", up);
+      cvs.addEventListener("pointercancel", up);
+      cvs.addEventListener("contextmenu", (e) => e.preventDefault());
+
+      window.addEventListener("keydown", (e) => {
+        if (e.key === "Shift") shiftHeld = true;
+        if (!$("intro").classList.contains("gone")) return;
+        const k = e.key.toLowerCase();
+        if (k === " ") {
+          e.preventDefault();
+          paused = !paused;
+          toast(paused ? "מושהה" : "ממשיכים");
+          if (AC) paused ? AC.suspend() : AC.resume();
+        } else if (k === "m") setMuted(!muted);
+        else if (k === "h") document.body.classList.toggle("hide");
+        else if (k === "r") $("bReset").click();
+        else if (k === "x") scatter();
+        else if (k === "s") snapshot();
+        else if (k >= "1" && k <= "4") setPalette(+k - 1);
+      });
+      window.addEventListener("keyup", (e) => {
+        if (e.key === "Shift") shiftHeld = false;
+      });
+      window.addEventListener("blur", () => {
+        shiftHeld = false;
+        up();
+      });
+      window.addEventListener("resize", resize);
+
+      function begin(sound) {
+        $("intro").classList.add("gone");
+        if (sound) {
+          try {
+            initAudio();
+          } catch (err) {
+            console.warn("Audio unavailable", err);
+          }
+        } else $("bMute").disabled = true;
+      }
+      $("go").onclick = () => begin(true);
+      $("goQuiet").onclick = () => begin(false);
+
+      // ---------- main loop ----------
+      let last = performance.now(),
+        fps = 60,
+        frame = 0;
+      function loop(now) {
+        const dtMs = Math.min(50, now - last);
+        last = now;
+        fps += (1000 / Math.max(1, dtMs) - fps) * 0.05;
+        if (!paused) {
+          step(Math.min(2, dtMs / 16.667));
+          render();
+        }
+        if (++frame % 3 === 0) {
+          phiHist[histPos] = phi;
+          histPos = (histPos + 1) % phiHist.length;
+          drawSpark();
+          $("phi").textContent = phi.toFixed(2);
+          $("sN").textContent = N.toLocaleString("he-IL");
+          $("sMood").textContent = mood();
+          $("sChord").textContent = AC
+            ? CHORDS[chordNow].name + (lastNote ? " · " + lastNote : "")
+            : "שקט";
+          $("sNotes").textContent = notesSung.toLocaleString("he-IL");
+          $("sFps").textContent = Math.round(fps);
+        }
+        requestAnimationFrame(loop);
+      }
+
+      // ---------- boot ----------
+      resize();
+      buildColors();
+      syncControls();
+      setPalette(0);
+      $("toast").style.opacity = 0;
+      resetFlock();
+      requestAnimationFrame(loop);
+    </script>
+  </body>
 </html>
