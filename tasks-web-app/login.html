@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>כניסה · המשימות שלי</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --text: #0f1111;
+      --muted: #565959;
+      --border: #d5d9d9;
+      --border-strong: #888c8c;
+      --link: #2162a1;
+      --link-hover: #c7511f;
+      --focus: #007185;
+      --btn: #ffd814;
+      --btn-hover: #f7ca00;
+      --btn-border: #fcd200;
+      --error: #c40000;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Heebo", Arial, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      color: var(--text);
+      background: #fff;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    button, input { font-family: inherit; }
+
+    a { color: var(--link); text-decoration: none; }
+    a:hover { color: var(--link-hover); text-decoration: underline; }
+
+    main {
+      width: 100%;
+      max-width: 390px;
+      padding: 32px 20px 0;
+      flex: 1;
+    }
+
+    /* ---------- Wordmark ---------- */
+    .brand {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 24px;
+      color: var(--text);
+      font-size: 1.6rem;
+      font-weight: 700;
+      letter-spacing: -.02em;
+    }
+    .brand:hover { color: var(--text); text-decoration: none; }
+    .brand-mark {
+      display: grid;
+      place-content: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: var(--text);
+      color: var(--btn);
+    }
+
+    /* ---------- Card ---------- */
+    .card {
+      padding: 28px 26px 24px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+
+    h1 {
+      font-size: 28px;
+      font-weight: 400;
+      line-height: 1.2;
+      margin-bottom: 20px;
+    }
+
+    .field { margin-bottom: 16px; }
+
+    .label-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 4px;
+    }
+
+    label {
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .label-row a { font-size: 13px; }
+
+    input[type="email"],
+    input[type="password"] {
+      width: 100%;
+      height: 31px;
+      padding: 3px 8px;
+      font-size: 14px;
+      color: var(--text);
+      background: #fff;
+      border: 1px solid var(--border-strong);
+      border-radius: 4px;
+      box-shadow: 0 1px 0 rgba(255,255,255,.5), 0 1px 0 rgba(0,0,0,.07) inset;
+      outline: none;
+      transition: border-color .1s, box-shadow .1s;
+    }
+    input[type="email"] { direction: ltr; text-align: left; }
+    input:focus {
+      border-color: var(--focus);
+      box-shadow: 0 0 0 3px #c8f3fa, 0 1px 2px rgba(15,17,17,.15) inset;
+    }
+    .field.invalid input { border-color: var(--error); box-shadow: 0 0 0 3px #fbe0e0; }
+
+    .error {
+      display: none;
+      align-items: center;
+      gap: 6px;
+      margin-top: 4px;
+      font-size: 12px;
+      color: var(--error);
+    }
+    .error::before {
+      content: "!";
+      display: grid;
+      place-content: center;
+      width: 14px;
+      height: 14px;
+      font-size: 10px;
+      font-weight: 700;
+      color: #fff;
+      background: var(--error);
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .field.invalid .error { display: flex; }
+
+    .remember {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin: 4px 0 18px;
+      font-size: 13px;
+    }
+    .remember input { width: 14px; height: 14px; accent-color: var(--focus); }
+    .remember label { font-weight: 400; }
+
+    .btn-primary {
+      width: 100%;
+      height: 31px;
+      font-size: 13px;
+      color: var(--text);
+      background: var(--btn);
+      border: 1px solid var(--btn-border);
+      border-radius: 100px;
+      box-shadow: 0 2px 5px rgba(213,217,217,.5);
+      cursor: pointer;
+    }
+    .btn-primary:hover { background: var(--btn-hover); border-color: #f2c200; }
+    .btn-primary:focus-visible { outline: none; box-shadow: 0 0 0 3px #c8f3fa; border-color: var(--focus); }
+
+    .legal {
+      margin-top: 18px;
+      font-size: 12px;
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    /* ---------- Divider + secondary ---------- */
+    .divider {
+      position: relative;
+      margin: 26px 0 14px;
+      text-align: center;
+      font-size: 12px;
+      color: #767676;
+    }
+    .divider::before {
+      content: "";
+      position: absolute;
+      inset-inline: 0;
+      top: 50%;
+      border-top: 1px solid #e7e7e7;
+    }
+    .divider span { position: relative; padding: 0 8px; background: #fff; }
+
+    .btn-secondary {
+      display: block;
+      width: 100%;
+      height: 31px;
+      line-height: 29px;
+      font-size: 13px;
+      text-align: center;
+      color: var(--text);
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      box-shadow: 0 2px 5px rgba(213,217,217,.5);
+    }
+    .btn-secondary:hover { color: var(--text); background: #f7fafa; text-decoration: none; }
+
+    /* ---------- Footer ---------- */
+    footer {
+      width: 100%;
+      margin-top: 32px;
+      padding: 28px 20px 32px;
+      background: linear-gradient(to bottom, rgba(0,0,0,.035), transparent 6px);
+      border-top: 1px solid #e7e7e7;
+      text-align: center;
+      font-size: 11px;
+      color: var(--muted);
+    }
+    footer nav {
+      display: flex;
+      justify-content: center;
+      gap: 28px;
+      margin-bottom: 8px;
+    }
+    footer a { font-size: 11px; }
+  </style>
+</head>
+<body>
+  <main>
+    <a class="brand" href="index.html" aria-label="המשימות שלי - דף הבית">
+      <span class="brand-mark" aria-hidden="true">✓</span>
+      המשימות שלי
+    </a>
+
+    <div class="card">
+      <h1>כניסה</h1>
+
+      <form id="login-form" novalidate>
+        <div class="field" id="email-field">
+          <div class="label-row">
+            <label for="email">כתובת אימייל</label>
+          </div>
+          <input type="email" id="email" autocomplete="email" autofocus>
+          <p class="error" id="email-error"></p>
+        </div>
+
+        <div class="field" id="password-field">
+          <div class="label-row">
+            <label for="password">סיסמה</label>
+            <a href="#">שכחת סיסמה?</a>
+          </div>
+          <input type="password" id="password" autocomplete="current-password">
+          <p class="error" id="password-error"></p>
+        </div>
+
+        <div class="remember">
+          <input type="checkbox" id="remember">
+          <label for="remember">השאר אותי מחובר</label>
+        </div>
+
+        <button type="submit" class="btn-primary">המשך</button>
+      </form>
+
+      <p class="legal">
+        בכניסה לחשבון אתה מסכים ל<a href="#">תנאי השימוש</a> ול<a href="#">מדיניות הפרטיות</a> שלנו.
+      </p>
+    </div>
+
+    <div class="divider"><span>חדש.ה כאן?</span></div>
+    <a class="btn-secondary" href="#">יצירת חשבון חדש</a>
+  </main>
+
+  <footer>
+    <nav>
+      <a href="#">תנאי שימוש</a>
+      <a href="#">פרטיות</a>
+      <a href="#">עזרה</a>
+    </nav>
+    <p>© 2026 המשימות שלי</p>
+  </footer>
+
+  <script>
+    const form = document.getElementById('login-form');
+    const fields = {
+      email: {
+        input: document.getElementById('email'),
+        wrap: document.getElementById('email-field'),
+        error: document.getElementById('email-error'),
+        validate: v => !v ? 'יש להזין כתובת אימייל'
+          : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) ? 'כתובת האימייל אינה תקינה'
+          : '',
+      },
+      password: {
+        input: document.getElementById('password'),
+        wrap: document.getElementById('password-field'),
+        error: document.getElementById('password-error'),
+        validate: v => !v ? 'יש להזין סיסמה' : '',
+      },
+    };
+
+    function check(f) {
+      const msg = f.validate(f.input.value.trim());
+      f.error.textContent = msg;
+      f.wrap.classList.toggle('invalid', !!msg);
+      f.input.setAttribute('aria-invalid', String(!!msg));
+      return !msg;
+    }
+
+    // Clear an error as soon as the user fixes the field
+    for (const f of Object.values(fields)) {
+      f.input.setAttribute('aria-describedby', f.error.id);
+      f.input.addEventListener('input', () => {
+        if (f.wrap.classList.contains('invalid')) check(f);
+      });
+    }
+
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      const results = Object.values(fields).map(check);
+      if (results.includes(false)) {
+        Object.values(fields).find(f => f.wrap.classList.contains('invalid')).input.focus();
+        return;
+      }
+      // Demo only: there is no server, so we just go to the app.
+      window.location.href = 'index.html';
+    });
+  </script>
+</body>
+</html>

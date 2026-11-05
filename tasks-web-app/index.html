@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>משימות</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-1: #eef2ff;
+      --bg-2: #fdf2f8;
+      --card: #ffffff;
+      --text: #1e2230;
+      --muted: #8b91a1;
+      --border: #eceef3;
+      --accent: #5b5bd6;
+      --accent-2: #8b5cf6;
+      --danger: #e5484d;
+
+      --cat-work: #3b82f6;
+      --cat-personal: #10b981;
+      --cat-urgent: #ef4444;
+      --cat-medical: #a855f7;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Heebo", -apple-system, "Segoe UI", Arial, sans-serif;
+      background: linear-gradient(135deg, var(--bg-1), var(--bg-2));
+      background-attachment: fixed;
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 56px 16px;
+    }
+
+    button, input { font-family: inherit; }
+
+    .app {
+      width: 100%;
+      max-width: 560px;
+      background: var(--card);
+      border-radius: 20px;
+      box-shadow: 0 2px 4px rgba(30,34,48,.04), 0 20px 50px -12px rgba(91,91,214,.18);
+      overflow: hidden;
+    }
+
+    /* ---------- Header ---------- */
+    header {
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: #fff;
+      padding: 28px 28px 24px;
+    }
+    .date { font-size: .85rem; opacity: .8; margin-bottom: 2px; }
+    h1 { font-size: 1.9rem; font-weight: 800; letter-spacing: -.01em; }
+
+    .progress-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-top: 14px;
+    }
+    .summary { font-size: .95rem; opacity: .9; }
+    .percent { font-size: 1.4rem; font-weight: 800; }
+
+    .progress {
+      height: 8px;
+      background: rgba(255,255,255,.25);
+      border-radius: 99px;
+      margin-top: 8px;
+      overflow: hidden;
+    }
+    .progress-bar {
+      height: 100%;
+      width: 0;
+      background: #fff;
+      border-radius: 99px;
+      transition: width .4s ease;
+    }
+
+    .content { padding: 20px 28px 28px; }
+
+    /* ---------- Filters (top) ---------- */
+    .filters {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 20px;
+      padding: 4px;
+      background: #f4f5f9;
+      border-radius: 12px;
+      overflow-x: auto;
+    }
+    .filter {
+      flex: 1;
+      white-space: nowrap;
+      padding: 8px 10px;
+      font-size: .85rem;
+      font-weight: 500;
+      color: var(--muted);
+      background: none;
+      border: none;
+      border-radius: 9px;
+      cursor: pointer;
+      transition: background .15s, color .15s;
+    }
+    .filter:hover { color: var(--text); }
+    .filter[aria-pressed="true"] {
+      color: var(--text);
+      background: #fff;
+      box-shadow: 0 1px 3px rgba(0,0,0,.08);
+    }
+    .filter .count {
+      display: inline-block;
+      min-width: 18px;
+      margin-right: 4px;
+      padding: 0 5px;
+      font-size: .75rem;
+      border-radius: 99px;
+      background: rgba(0,0,0,.06);
+    }
+    .filter[data-cat] .count { background: var(--c); color: #fff; }
+
+    /* ---------- Form ---------- */
+    form { display: flex; gap: 8px; }
+
+    #task-input {
+      flex: 1;
+      padding: 13px 16px;
+      font-size: 1rem;
+      background: #f7f8fb;
+      border: 1.5px solid transparent;
+      border-radius: 12px;
+      outline: none;
+      transition: border-color .15s, background .15s, box-shadow .15s;
+    }
+    #task-input:focus {
+      background: #fff;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 4px rgba(91,91,214,.12);
+    }
+
+    .add-btn {
+      padding: 0 22px;
+      font-size: 1rem;
+      font-weight: 700;
+      color: #fff;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: transform .1s, box-shadow .15s;
+      box-shadow: 0 4px 12px -2px rgba(91,91,214,.4);
+    }
+    .add-btn:hover { box-shadow: 0 6px 16px -2px rgba(91,91,214,.5); }
+    .add-btn:active { transform: scale(.97); }
+
+    /* ---------- Category picker ---------- */
+    .picker {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      margin: 12px 0 8px;
+    }
+    .picker-label { font-size: .85rem; color: var(--muted); margin-left: 4px; }
+
+    .chip {
+      --c: var(--muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      font-size: .85rem;
+      font-weight: 500;
+      color: var(--c);
+      background: #fff;
+      border: 1.5px solid var(--border);
+      border-radius: 99px;
+      cursor: pointer;
+      transition: background .15s, border-color .15s, color .15s;
+    }
+    .chip::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--c);
+    }
+    .chip:hover { border-color: var(--c); }
+    .chip[aria-pressed="true"] {
+      color: #fff;
+      background: var(--c);
+      border-color: var(--c);
+    }
+    .chip[aria-pressed="true"]::before { background: #fff; }
+
+    [data-cat="work"]     { --c: var(--cat-work); }
+    [data-cat="personal"] { --c: var(--cat-personal); }
+    [data-cat="urgent"]   { --c: var(--cat-urgent); }
+    [data-cat="medical"]  { --c: var(--cat-medical); }
+
+    /* ---------- Task list ---------- */
+    ul { list-style: none; }
+
+    li {
+      --c: #d5d8e0;
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 8px;
+      padding: 13px 8px 13px 10px;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      transition: box-shadow .15s, opacity .25s, transform .15s;
+      animation: slideIn .25s ease;
+    }
+    li::before {
+      content: "";
+      position: absolute;
+      inset-block: 10px;
+      right: 0;
+      width: 4px;
+      border-radius: 4px 0 0 4px;
+      background: var(--c);
+    }
+    li:hover { box-shadow: 0 4px 14px -4px rgba(30,34,48,.12); }
+    li.done { opacity: .6; }
+    li.removing { opacity: 0; transform: translateX(-16px); }
+    li.dragging {
+      opacity: 1;
+      z-index: 2;
+      box-shadow: 0 12px 28px -6px rgba(30,34,48,.25);
+      transform: scale(1.02);
+      animation: none;
+    }
+    ul.is-dragging, ul.is-dragging * { cursor: grabbing !important; user-select: none; }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-6px); }
+      to   { opacity: 1; transform: none; }
+    }
+
+    /* Drag handle */
+    .handle {
+      flex-shrink: 0;
+      display: grid;
+      place-content: center;
+      width: 20px;
+      height: 32px;
+      color: #c4c8d2;
+      background: none;
+      border: none;
+      border-radius: 6px;
+      cursor: grab;
+      touch-action: none;
+      transition: color .15s, background .15s;
+    }
+    .handle:hover { color: var(--muted); background: #f4f5f9; }
+
+    /* Custom round checkbox */
+    .check {
+      appearance: none;
+      flex-shrink: 0;
+      width: 22px;
+      height: 22px;
+      border: 2px solid #cfd3dc;
+      border-radius: 50%;
+      cursor: pointer;
+      display: grid;
+      place-content: center;
+      transition: background .15s, border-color .15s;
+    }
+    .check:hover { border-color: var(--c); }
+    .check::after {
+      content: "";
+      width: 6px;
+      height: 11px;
+      border: solid #fff;
+      border-width: 0 2.5px 2.5px 0;
+      transform: rotate(45deg) scale(0);
+      margin-top: -2px;
+      transition: transform .15s ease;
+    }
+    .check:checked { background: var(--c); border-color: var(--c); }
+    li:not([data-cat]) .check:checked { background: var(--accent); border-color: var(--accent); }
+    .check:checked::after { transform: rotate(45deg) scale(1); }
+
+    .task-body { flex: 1; min-width: 0; }
+
+    /* Animated strikethrough: a line that draws right-to-left */
+    .task-text {
+      font-size: 1rem;
+      word-break: break-word;
+      background-image: linear-gradient(currentColor, currentColor);
+      background-repeat: no-repeat;
+      background-position: right 55%;
+      background-size: 0% 2px;
+      -webkit-box-decoration-break: clone;
+      box-decoration-break: clone;
+      transition: background-size .35s ease, color .25s;
+    }
+    li.done .task-text {
+      color: var(--muted);
+      background-size: 100% 2px;
+    }
+
+    .badge {
+      display: inline-block;
+      margin-top: 4px;
+      padding: 2px 9px;
+      font-size: .72rem;
+      font-weight: 700;
+      color: var(--c);
+      background: color-mix(in srgb, var(--c) 12%, transparent);
+      border: none;
+      border-radius: 99px;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .badge:hover { background: color-mix(in srgb, var(--c) 22%, transparent); }
+    li:not([data-cat]) .badge { color: var(--muted); background: #f1f2f6; }
+
+    .delete-btn {
+      flex-shrink: 0;
+      display: grid;
+      place-content: center;
+      width: 32px;
+      height: 32px;
+      color: var(--muted);
+      background: none;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity .15s, background .15s, color .15s;
+    }
+    li:hover .delete-btn, .delete-btn:focus-visible { opacity: 1; }
+    .delete-btn:hover { background: #fdecec; color: var(--danger); }
+    @media (hover: none) { .delete-btn { opacity: 1; } }
+
+    .empty {
+      text-align: center;
+      color: var(--muted);
+      padding: 36px 0 16px;
+    }
+    .empty-icon { font-size: 2rem; margin-bottom: 6px; }
+
+    /* ---------- Chart ---------- */
+    .chart-card {
+      margin-top: 28px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+    }
+    .chart-title { font-size: 1rem; font-weight: 700; }
+    .chart-sub { font-size: .8rem; color: var(--muted); margin-bottom: 10px; }
+
+    .chart-wrap { position: relative; direction: ltr; }
+    .chart-wrap svg { display: block; width: 100%; overflow: visible; }
+    .chart-wrap text { font-family: inherit; font-size: 11px; fill: var(--muted); }
+    .chart-wrap .value-label { font-size: 12px; font-weight: 700; fill: var(--text); }
+
+    .tooltip {
+      position: absolute;
+      top: 0;
+      pointer-events: none;
+      padding: 6px 10px;
+      font-size: .8rem;
+      line-height: 1.35;
+      white-space: nowrap;
+      color: var(--text);
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      box-shadow: 0 6px 16px -4px rgba(30,34,48,.18);
+      transform: translate(-50%, -110%);
+      direction: rtl;
+      text-align: right;
+    }
+    .tooltip strong { font-size: .95rem; }
+    .tooltip span { color: var(--muted); }
+
+    .chart-empty {
+      padding: 28px 0;
+      text-align: center;
+      font-size: .9rem;
+      color: var(--muted);
+      background: #f8f9fb;
+      border-radius: 12px;
+    }
+
+    details { margin-top: 10px; font-size: .85rem; }
+    summary { color: var(--muted); cursor: pointer; }
+    summary:hover { color: var(--text); }
+    table { width: 100%; margin-top: 8px; border-collapse: collapse; }
+    th, td { padding: 6px 8px; text-align: right; border-bottom: 1px solid var(--border); }
+    th { color: var(--muted); font-weight: 500; }
+    td:last-child, th:last-child { text-align: left; font-variant-numeric: tabular-nums; }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header>
+      <p class="date" id="date"></p>
+      <h1>המשימות שלי</h1>
+      <div class="progress-row">
+        <p class="summary" id="summary"></p>
+        <span class="percent" id="percent">0%</span>
+      </div>
+      <div class="progress" role="progressbar" aria-label="אחוז השלמה" aria-valuemin="0" aria-valuemax="100" id="progress-track">
+        <div class="progress-bar" id="progress"></div>
+      </div>
+    </header>
+
+    <div class="content">
+      <div class="filters" id="filters" role="group" aria-label="סינון לפי קטגוריה"></div>
+
+      <form id="task-form">
+        <input type="text" id="task-input" placeholder="מה צריך לעשות?" autocomplete="off" aria-label="משימה חדשה" autofocus>
+        <button type="submit" class="add-btn">הוסף</button>
+      </form>
+
+      <div class="picker" id="picker" role="group" aria-label="קטגוריה">
+        <span class="picker-label">קטגוריה:</span>
+      </div>
+
+      <ul id="task-list"></ul>
+      <div class="empty" id="empty">
+        <div class="empty-icon">✓</div>
+        <p id="empty-text"></p>
+      </div>
+
+      <section class="chart-card" aria-labelledby="chart-title">
+        <h2 class="chart-title" id="chart-title">אחוז משימות שהושלמו</h2>
+        <p class="chart-sub">נקודה חדשה נרשמת בכל פעם שאחוז ההשלמה משתנה</p>
+        <div class="chart-wrap" id="chart-wrap">
+          <svg id="chart" aria-hidden="true"></svg>
+          <div class="tooltip" id="tooltip" hidden></div>
+        </div>
+        <div class="chart-empty" id="chart-empty" hidden>השלם או הוסף משימות כדי לראות את הגרף</div>
+        <details id="chart-table-wrap">
+          <summary>הצג כטבלה</summary>
+          <table>
+            <thead><tr><th>זמן</th><th>הושלמו</th></tr></thead>
+            <tbody id="chart-table"></tbody>
+          </table>
+        </details>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    const STORAGE_KEY = 'tasks';
+    const HISTORY_KEY = 'taskHistory';
+    const HISTORY_MAX = 30;
+    const CATEGORIES = {
+      work:     'עבודה',
+      personal: 'אישי',
+      urgent:   'דחוף',
+      medical:  'רפואי',
+    };
+    const CAT_KEYS = Object.keys(CATEGORIES);
+    const SVG_NS = 'http://www.w3.org/2000/svg';
+
+    const $ = id => document.getElementById(id);
+    const form = $('task-form');
+    const input = $('task-input');
+    const picker = $('picker');
+    const filters = $('filters');
+    const list = $('task-list');
+    const empty = $('empty');
+    const emptyText = $('empty-text');
+    const summary = $('summary');
+    const percentEl = $('percent');
+    const progress = $('progress');
+    const progressTrack = $('progress-track');
+    const chartWrap = $('chart-wrap');
+    const chart = $('chart');
+    const tooltip = $('tooltip');
+    const chartEmpty = $('chart-empty');
+    const chartTableWrap = $('chart-table-wrap');
+    const chartTable = $('chart-table');
+
+    let tasks = loadJSON(STORAGE_KEY);
+    let history = loadJSON(HISTORY_KEY);
+    let selectedCat = null;   // category for the next new task
+    let activeFilter = 'all';
+
+    $('date').textContent =
+      new Date().toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' });
+
+    function loadJSON(key) {
+      try { return JSON.parse(localStorage.getItem(key)) || []; }
+      catch { return []; }
+    }
+
+    function completionPct() {
+      if (!tasks.length) return 0;
+      return Math.round(tasks.filter(t => t.done).length / tasks.length * 100);
+    }
+
+    function recordHistory() {
+      const pct = completionPct();
+      const last = history[history.length - 1];
+      if (last && last.pct === pct) return;
+      history.push({ t: Date.now(), pct });
+      if (history.length > HISTORY_MAX) history = history.slice(-HISTORY_MAX);
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+    }
+
+    function save() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+      recordHistory();
+    }
+
+    // ----- Category picker (for new tasks) -----
+    for (const key of CAT_KEYS) {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'chip';
+      chip.dataset.cat = key;
+      chip.textContent = CATEGORIES[key];
+      chip.setAttribute('aria-pressed', 'false');
+      picker.appendChild(chip);
+    }
+
+    picker.addEventListener('click', e => {
+      const chip = e.target.closest('.chip');
+      if (!chip) return;
+      selectedCat = selectedCat === chip.dataset.cat ? null : chip.dataset.cat;
+      for (const c of picker.querySelectorAll('.chip')) {
+        c.setAttribute('aria-pressed', String(c.dataset.cat === selectedCat));
+      }
+      input.focus();
+    });
+
+    // ----- Rendering -----
+    function renderFilters() {
+      const counts = { all: tasks.length };
+      for (const key of CAT_KEYS) counts[key] = tasks.filter(t => t.category === key).length;
+
+      filters.innerHTML = '';
+      for (const key of ['all', ...CAT_KEYS]) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'filter';
+        btn.dataset.filter = key;
+        if (key !== 'all') btn.dataset.cat = key;
+        btn.setAttribute('aria-pressed', String(key === activeFilter));
+        btn.textContent = key === 'all' ? 'הכל' : CATEGORIES[key];
+        const count = document.createElement('span');
+        count.className = 'count';
+        count.textContent = counts[key];
+        btn.appendChild(count);
+        filters.appendChild(btn);
+      }
+    }
+
+    function renderTask(task) {
+      const li = document.createElement('li');
+      li.dataset.id = task.id;
+      if (task.category) li.dataset.cat = task.category;
+      if (task.done) li.classList.add('done');
+
+      const handle = document.createElement('button');
+      handle.type = 'button';
+      handle.className = 'handle';
+      handle.setAttribute('aria-label', 'גרור לשינוי סדר');
+      handle.innerHTML = '<svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor"><circle cx="2" cy="2" r="1.6"/><circle cx="8" cy="2" r="1.6"/><circle cx="2" cy="8" r="1.6"/><circle cx="8" cy="8" r="1.6"/><circle cx="2" cy="14" r="1.6"/><circle cx="8" cy="14" r="1.6"/></svg>';
+
+      const check = document.createElement('input');
+      check.type = 'checkbox';
+      check.className = 'check';
+      check.checked = task.done;
+      check.setAttribute('aria-label', 'סמן כהושלמה');
+
+      const body = document.createElement('div');
+      body.className = 'task-body';
+
+      const text = document.createElement('span');
+      text.className = 'task-text';
+      text.textContent = task.text;
+
+      const badge = document.createElement('button');
+      badge.type = 'button';
+      badge.className = 'badge';
+      badge.textContent = task.category ? CATEGORIES[task.category] : '+ קטגוריה';
+      badge.title = 'לחץ להחלפת קטגוריה';
+
+      body.append(text, document.createElement('br'), badge);
+
+      const del = document.createElement('button');
+      del.type = 'button';
+      del.className = 'delete-btn';
+      del.setAttribute('aria-label', 'מחק משימה');
+      del.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg>';
+
+      li.append(handle, check, body, del);
+      return li;
+    }
+
+    function render() {
+      const visible = activeFilter === 'all'
+        ? tasks
+        : tasks.filter(t => t.category === activeFilter);
+
+      list.innerHTML = '';
+      for (const task of visible) list.appendChild(renderTask(task));
+
+      const doneCount = tasks.filter(t => t.done).length;
+      const remaining = tasks.length - doneCount;
+      const pct = completionPct();
+      summary.textContent = tasks.length
+        ? (remaining ? `נותרו ${remaining} מתוך ${tasks.length} משימות` : 'כל המשימות הושלמו! 🎉')
+        : 'אין משימות עדיין';
+      percentEl.textContent = `${pct}%`;
+      progress.style.width = `${pct}%`;
+      progressTrack.setAttribute('aria-valuenow', pct);
+
+      empty.hidden = visible.length > 0;
+      emptyText.textContent = activeFilter === 'all'
+        ? 'אין משימות. הוסף משימה למעלה.'
+        : `אין משימות בקטגוריה "${CATEGORIES[activeFilter]}".`;
+
+      renderFilters();
+      renderChart();
+    }
+
+    // ----- Line chart -----
+    function svgEl(tag, attrs) {
+      const el = document.createElementNS(SVG_NS, tag);
+      for (const k in attrs) el.setAttribute(k, attrs[k]);
+      return el;
+    }
+
+    function fmtTime(t) {
+      const d = new Date(t);
+      const time = d.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+      return d.toDateString() === new Date().toDateString()
+        ? time
+        : `${d.getDate()}.${d.getMonth() + 1} ${time}`;
+    }
+
+    function renderChart() {
+      chartTable.innerHTML = '';
+      for (const p of [...history].reverse()) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${fmtTime(p.t)}</td><td>${p.pct}%</td>`;
+        chartTable.appendChild(tr);
+      }
+
+      const hasData = history.length >= 2;
+      chartWrap.hidden = !hasData;
+      chartEmpty.hidden = hasData;
+      chartTableWrap.hidden = !history.length;
+      tooltip.hidden = true;
+      if (!hasData) return;
+
+      const W = chartWrap.clientWidth;
+      const H = 170;
+      const pad = { top: 22, right: 14, bottom: 26, left: 38 };
+      const n = history.length;
+      const innerW = W - pad.left - pad.right;
+      const innerH = H - pad.top - pad.bottom;
+      const x = i => pad.left + (i / (n - 1)) * innerW;
+      const y = v => pad.top + (1 - v / 100) * innerH;
+
+      chart.innerHTML = '';
+      chart.setAttribute('viewBox', `0 0 ${W} ${H}`);
+      chart.setAttribute('height', H);
+
+      // Area gradient
+      const defs = svgEl('defs', {});
+      const grad = svgEl('linearGradient', { id: 'area-grad', x1: 0, y1: 0, x2: 0, y2: 1 });
+      grad.append(
+        svgEl('stop', { offset: '0%', 'stop-color': '#5b5bd6', 'stop-opacity': .18 }),
+        svgEl('stop', { offset: '100%', 'stop-color': '#5b5bd6', 'stop-opacity': 0 })
+      );
+      defs.appendChild(grad);
+      chart.appendChild(defs);
+
+      // Recessive grid + y labels
+      for (const v of [0, 50, 100]) {
+        chart.appendChild(svgEl('line', {
+          x1: pad.left, x2: W - pad.right, y1: y(v), y2: y(v),
+          stroke: '#eceef3', 'stroke-width': 1,
+        }));
+        const label = svgEl('text', { x: pad.left - 8, y: y(v) + 4, 'text-anchor': 'end' });
+        label.textContent = `${v}%`;
+        chart.appendChild(label);
+      }
+
+      // X labels: first and last
+      const xFirst = svgEl('text', { x: x(0), y: H - 6, 'text-anchor': 'start' });
+      xFirst.textContent = fmtTime(history[0].t);
+      const xLast = svgEl('text', { x: x(n - 1), y: H - 6, 'text-anchor': 'end' });
+      xLast.textContent = fmtTime(history[n - 1].t);
+      chart.append(xFirst, xLast);
+
+      // Area + line
+      const linePts = history.map((p, i) => `${x(i)},${y(p.pct)}`).join(' L ');
+      chart.appendChild(svgEl('path', {
+        d: `M ${x(0)},${y(0)} L ${linePts} L ${x(n - 1)},${y(0)} Z`,
+        fill: 'url(#area-grad)',
+      }));
+      chart.appendChild(svgEl('path', {
+        d: `M ${linePts}`,
+        fill: 'none', stroke: '#5b5bd6', 'stroke-width': 2,
+        'stroke-linejoin': 'round', 'stroke-linecap': 'round',
+      }));
+
+      // Latest point: marker + direct label
+      const last = history[n - 1];
+      chart.appendChild(svgEl('circle', {
+        cx: x(n - 1), cy: y(last.pct), r: 4.5,
+        fill: '#5b5bd6', stroke: '#fff', 'stroke-width': 2,
+      }));
+      const valueLabel = svgEl('text', {
+        x: x(n - 1), y: y(last.pct) - 10, 'text-anchor': 'end', class: 'value-label',
+      });
+      valueLabel.textContent = `${last.pct}%`;
+      chart.appendChild(valueLabel);
+
+      // Hover layer: crosshair + dot + tooltip
+      const cross = svgEl('line', {
+        y1: pad.top, y2: H - pad.bottom, stroke: '#c4c8d2', 'stroke-width': 1,
+        'stroke-dasharray': '3 3', visibility: 'hidden',
+      });
+      const dot = svgEl('circle', {
+        r: 5, fill: '#5b5bd6', stroke: '#fff', 'stroke-width': 2, visibility: 'hidden',
+      });
+      const hit = svgEl('rect', {
+        x: pad.left - 10, y: 0, width: innerW + 20, height: H, fill: 'transparent',
+      });
+      chart.append(cross, dot, hit);
+
+      hit.addEventListener('pointermove', e => {
+        const rect = chart.getBoundingClientRect();
+        const mx = (e.clientX - rect.left) * (W / rect.width);
+        const i = Math.max(0, Math.min(n - 1, Math.round((mx - pad.left) / innerW * (n - 1))));
+        const p = history[i];
+        const cx = x(i), cy = y(p.pct);
+        cross.setAttribute('x1', cx);
+        cross.setAttribute('x2', cx);
+        cross.setAttribute('visibility', 'visible');
+        dot.setAttribute('cx', cx);
+        dot.setAttribute('cy', cy);
+        dot.setAttribute('visibility', 'visible');
+        tooltip.innerHTML = `<strong>${p.pct}%</strong> הושלמו<br><span>${fmtTime(p.t)}</span>`;
+        tooltip.hidden = false;
+        const tw = tooltip.offsetWidth;
+        const left = Math.max(tw / 2, Math.min(W - tw / 2, cx));
+        tooltip.style.left = `${left}px`;
+        tooltip.style.top = `${cy - 8}px`;
+      });
+      hit.addEventListener('pointerleave', () => {
+        cross.setAttribute('visibility', 'hidden');
+        dot.setAttribute('visibility', 'hidden');
+        tooltip.hidden = true;
+      });
+    }
+
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(renderChart, 100);
+    });
+
+    // ----- Drag & drop reordering (pointer events: mouse + touch) -----
+    let dragLi = null;
+
+    list.addEventListener('pointerdown', e => {
+      const handle = e.target.closest('.handle');
+      if (!handle || e.button !== 0) return;
+      e.preventDefault();
+      dragLi = handle.closest('li');
+      dragLi.classList.add('dragging');
+      list.classList.add('is-dragging');
+      handle.setPointerCapture(e.pointerId);
+    });
+
+    list.addEventListener('pointermove', e => {
+      if (!dragLi) return;
+      const siblings = [...list.children].filter(li => li !== dragLi);
+      const next = siblings.find(li => {
+        const r = li.getBoundingClientRect();
+        return e.clientY < r.top + r.height / 2;
+      });
+      if (next) {
+        if (dragLi.nextElementSibling !== next) list.insertBefore(dragLi, next);
+      } else if (list.lastElementChild !== dragLi) {
+        list.appendChild(dragLi);
+      }
+    });
+
+    function endDrag() {
+      if (!dragLi) return;
+      dragLi.classList.remove('dragging');
+      list.classList.remove('is-dragging');
+      dragLi = null;
+
+      // New order of the visible tasks, per the DOM
+      const byId = new Map(tasks.map(t => [t.id, t]));
+      const reordered = [...list.children].map(li => byId.get(li.dataset.id));
+      const visibleIds = new Set(reordered.map(t => t.id));
+
+      // Put them back into the slots the visible tasks occupied, so hidden
+      // (filtered-out) tasks keep their positions.
+      let k = 0;
+      tasks = tasks.map(t => visibleIds.has(t.id) ? reordered[k++] : t);
+      save();
+      render();
+    }
+
+    list.addEventListener('pointerup', endDrag);
+    list.addEventListener('pointercancel', endDrag);
+
+    // ----- Events -----
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      const text = input.value.trim();
+      if (!text) return;
+      tasks.push({
+        id: Date.now().toString(36) + Math.random().toString(36).slice(2),
+        text,
+        category: selectedCat,
+        done: false,
+      });
+      input.value = '';
+      save();
+      render();
+    });
+
+    filters.addEventListener('click', e => {
+      const btn = e.target.closest('.filter');
+      if (!btn) return;
+      activeFilter = btn.dataset.filter;
+      render();
+    });
+
+    list.addEventListener('click', e => {
+      const li = e.target.closest('li');
+      if (!li) return;
+      const task = tasks.find(t => t.id === li.dataset.id);
+      if (!task) return;
+
+      if (e.target.matches('.check')) {
+        // Toggle in place so the strikethrough animation can play
+        task.done = e.target.checked;
+        li.classList.toggle('done', task.done);
+        save();
+        setTimeout(render, 350);
+      } else if (e.target.closest('.delete-btn')) {
+        tasks = tasks.filter(t => t !== task);
+        save();
+        li.classList.add('removing');
+        setTimeout(render, 200);
+      } else if (e.target.closest('.badge')) {
+        // Cycle: none → work → personal → urgent → medical → none
+        const idx = CAT_KEYS.indexOf(task.category);
+        task.category = idx === CAT_KEYS.length - 1 ? null : CAT_KEYS[idx + 1];
+        save();
+        render();
+      }
+    });
+
+    // Seed history with the current state on first load
+    if (!history.length && tasks.length) recordHistory();
+    render();
+  </script>
+</body>
+</html>
