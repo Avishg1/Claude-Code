@@ -86,8 +86,10 @@ const sectionObserver = new IntersectionObserver((entries) => {
 }, { rootMargin: '-45% 0px -50% 0px' });
 document.querySelectorAll('main section[id]').forEach((s) => sectionObserver.observe(s));
 
-// טופס יצירת קשר — נשלח למייל דרך FormSubmit (https://formsubmit.co)
-const FORM_ENDPOINT = 'https://formsubmit.co/ajax/avishay.greenberg@gmail.com';
+// טופס יצירת קשר — נשלח למייל דרך Web3Forms (https://web3forms.com)
+// מפתח הגישה נוצר ב-web3forms.com עבור avishay.greenberg@gmail.com (בטוח לחשיפה בקוד צד-לקוח)
+const FORM_ENDPOINT = 'https://api.web3forms.com/submit';
+const WEB3FORMS_ACCESS_KEY = 'f3ac9823-a45a-4d8c-8a79-2fc8939bd799';
 const form = document.getElementById('contactForm');
 const status = document.getElementById('formStatus');
 const submitBtn = form.querySelector('button[type="submit"]');
@@ -108,11 +110,17 @@ form.addEventListener('submit', async (e) => {
     form.querySelector('.is-invalid')?.focus();
     return;
   }
+  if (WEB3FORMS_ACCESS_KEY === 'YOUR_ACCESS_KEY_HERE') {
+    console.error('Web3Forms access key is missing — set WEB3FORMS_ACCESS_KEY in script.js');
+    status.textContent = 'טופס יצירת הקשר עדיין לא הוגדר. נסו שוב מאוחר יותר.';
+    status.classList.add('is-error');
+    return;
+  }
   const data = Object.fromEntries(new FormData(form));
-  data._subject = `הודעה חדשה מהאתר מאת ${data.name || ''}`.trim();
-  data._replyto = data.email;
-  data._template = 'table';
-  data._captcha = 'false';
+  data.access_key = WEB3FORMS_ACCESS_KEY;
+  data.subject = `פנייה מהאתר: ${data.subject || ''} (${data.name || ''})`;
+  data.from_name = 'האתר שלי';
+  data.replyto = data.email;
 
   submitBtn.disabled = true;
   status.textContent = 'שולח...';
