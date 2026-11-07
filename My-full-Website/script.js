@@ -86,10 +86,12 @@ const sectionObserver = new IntersectionObserver((entries) => {
 }, { rootMargin: '-45% 0px -50% 0px' });
 document.querySelectorAll('main section[id]').forEach((s) => sectionObserver.observe(s));
 
-// טופס יצירת קשר (אימות בצד הלקוח בלבד — אין שרת)
+// טופס יצירת קשר — נשלח למייל דרך FormSubmit (https://formsubmit.co)
+const FORM_ENDPOINT = 'https://formsubmit.co/ajax/avishay.greenberg@gmail.com';
 const form = document.getElementById('contactForm');
 const status = document.getElementById('formStatus');
-form.addEventListener('submit', (e) => {
+const submitBtn = form.querySelector('button[type="submit"]');
+form.addEventListener('submit', async (e) => {
   e.preventDefault();
   let valid = true;
   form.querySelectorAll('[required]').forEach((field) => {
@@ -106,9 +108,32 @@ form.addEventListener('submit', (e) => {
     form.querySelector('.is-invalid')?.focus();
     return;
   }
-  status.textContent = 'תודה! ההודעה נשלחה בהצלחה, אחזור אליך בקרוב.';
-  status.classList.add('is-success');
-  form.reset();
+  const data = Object.fromEntries(new FormData(form));
+  data._subject = `הודעה חדשה מהאתר מאת ${data.name || ''}`.trim();
+  data._replyto = data.email;
+  data._template = 'table';
+  data._captcha = 'false';
+
+  submitBtn.disabled = true;
+  status.textContent = 'שולח...';
+  try {
+    const res = await fetch(FORM_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify(data),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || String(json.success) !== 'true') throw new Error(json.message || res.status);
+    status.textContent = 'תודה! ההודעה נשלחה בהצלחה, אחזור אליך בקרוב.';
+    status.classList.add('is-success');
+    form.reset();
+  } catch (err) {
+    console.error('Form submit failed:', err);
+    status.textContent = 'אירעה שגיאה בשליחה. נסו שוב מאוחר יותר.';
+    status.classList.add('is-error');
+  } finally {
+    submitBtn.disabled = false;
+  }
 });
 form.addEventListener('input', (e) => {
   if (e.target.classList.contains('is-invalid') && e.target.checkValidity() && e.target.value.trim()) {
