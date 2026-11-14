@@ -168,12 +168,94 @@
     .icon-btn svg { width: 20px; height: 20px; }
     .badge {
       position: absolute;
-      top: 8px; left: 9px;
-      width: 8px; height: 8px;
-      background: #e34948;
-      border-radius: 50%;
+      top: -6px; left: -6px;
+      min-width: 19px; height: 19px;
+      padding: 0 5px;
+      display: grid; place-items: center;
+      background: #dc2626;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 1;
+      border-radius: 999px;
       box-shadow: 0 0 0 2px #fff;
     }
+    .badge[hidden] { display: none; }
+
+    /* Clock */
+    .clock {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 12px;
+      border-radius: 10px;
+      background: var(--page-bg);
+      border: 1px solid var(--border);
+      font-size: 14px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      color: var(--text-secondary);
+    }
+    .clock svg { width: 16px; height: 16px; color: var(--text-muted); }
+
+    /* Notifications dropdown */
+    .notif { position: relative; }
+    .icon-btn[aria-expanded="true"] { background: var(--page-bg); border-color: #cbd5e1; }
+    .notif-panel {
+      position: absolute;
+      top: calc(100% + 10px);
+      left: 0;
+      width: 340px;
+      max-width: calc(100vw - 32px);
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: 0 12px 32px rgba(15, 23, 42, 0.14), 0 2px 6px rgba(15, 23, 42, 0.06);
+      overflow: hidden;
+      z-index: 40;
+      transform-origin: top left;
+      animation: panel-in 0.16s ease-out;
+    }
+    .notif-panel[hidden] { display: none; }
+    @keyframes panel-in { from { opacity: 0; transform: translateY(-4px) scale(0.98); } }
+    .notif-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .notif-title { font-size: 15px; font-weight: 600; }
+    .notif-list { list-style: none; }
+    .notif-item {
+      display: flex;
+      gap: 12px;
+      padding: 14px 16px;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .notif-item:last-child { border-bottom: none; }
+    .notif-item.unread { background: #f5f9ff; }
+    .notif-icon {
+      width: 34px; height: 34px;
+      flex-shrink: 0;
+      border-radius: 9px;
+      display: grid; place-items: center;
+    }
+    .notif-icon svg { width: 17px; height: 17px; }
+    .notif-icon.blue  { background: var(--primary-soft); color: var(--primary); }
+    .notif-icon.amber { background: #fef3c7; color: #b45309; }
+    .notif-icon.green { background: var(--up-bg); color: var(--up); }
+    .notif-body { flex: 1; min-width: 0; }
+    .notif-text { font-size: 13.5px; color: var(--text-primary); line-height: 1.45; }
+    .notif-time { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+    .notif-dot {
+      width: 8px; height: 8px;
+      margin-top: 6px;
+      flex-shrink: 0;
+      border-radius: 50%;
+      background: var(--primary);
+    }
+    .notif-item:not(.unread) .notif-dot { visibility: hidden; }
 
     .user { display: flex; align-items: center; gap: 10px; }
     .avatar {
@@ -206,6 +288,31 @@
       box-shadow: var(--shadow);
     }
     .metric { padding: 20px; }
+
+    /* Subtle "data refreshed" pulse, triggered every 30 seconds */
+    .metric.pulse { animation: metric-pulse 1.4s ease-in-out; }
+    .metric.pulse .metric-value { animation: value-pulse 1.4s ease-in-out; }
+    @keyframes metric-pulse {
+      0%, 100% { box-shadow: var(--shadow); border-color: var(--border); }
+      40% { box-shadow: 0 0 0 3px rgba(42, 120, 214, 0.10), var(--shadow); border-color: #bcd4f3; }
+    }
+    @keyframes value-pulse {
+      0%, 100% { opacity: 1; }
+      40% { opacity: 0.6; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .metric.pulse, .metric.pulse .metric-value { animation: none; }
+    }
+
+    .last-updated {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin: -12px 0 24px;
+      font-size: 12.5px;
+      color: var(--text-muted);
+    }
+    .last-updated svg { width: 14px; height: 14px; }
     .metric-top {
       display: flex;
       justify-content: space-between;
@@ -568,6 +675,7 @@
       .range { flex-wrap: wrap; }
       .range-options { max-width: 100%; overflow-x: auto; }
       .bulk-dock { bottom: 12px; padding-inline: 8px; }
+      .clock { display: none; }
       .bulk-btn .label { display: none; }
       .bulk-divider { display: none; }
     }
@@ -629,10 +737,56 @@
       </label>
 
       <div class="header-actions">
-        <button class="icon-btn" type="button" aria-label="התראות (3 חדשות)">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
-          <span class="badge" aria-hidden="true"></span>
-        </button>
+        <time class="clock" id="clock" aria-label="השעה הנוכחית">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          <span id="clockText" class="ltr"></span>
+        </time>
+
+        <div class="notif">
+          <button class="icon-btn" type="button" id="notifBtn" aria-label="התראות (3 שלא נקראו)" aria-expanded="false" aria-controls="notifPanel">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+            <span class="badge" id="notifBadge" aria-hidden="true">3</span>
+          </button>
+
+          <div class="notif-panel" id="notifPanel" role="region" aria-label="התראות" hidden>
+            <div class="notif-head">
+              <span class="notif-title">התראות</span>
+              <button type="button" class="link-btn" id="markAllRead">סימון הכל כנקרא</button>
+            </div>
+            <ul class="notif-list">
+              <li class="notif-item unread">
+                <span class="notif-icon blue" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+                </span>
+                <div class="notif-body">
+                  <p class="notif-text">הזמנה חדשה <span class="ltr">#10458</span> התקבלה מיוסי דהן</p>
+                  <p class="notif-time">לפני 5 דקות</p>
+                </div>
+                <span class="notif-dot" aria-label="לא נקראה"></span>
+              </li>
+              <li class="notif-item unread">
+                <span class="notif-icon amber" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+                </span>
+                <div class="notif-body">
+                  <p class="notif-text">מלאי נמוך: נותרו 4 יחידות מ״אוזניות אלחוטיות״</p>
+                  <p class="notif-time">לפני שעה</p>
+                </div>
+                <span class="notif-dot" aria-label="לא נקראה"></span>
+              </li>
+              <li class="notif-item unread">
+                <span class="notif-icon green" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 7 13.5 15.5 8.5 10.5 2 17"/><path d="M16 7h6v6"/></svg>
+                </span>
+                <div class="notif-body">
+                  <p class="notif-text">יעד המכירות החודשי הושג — <span class="ltr">112%</span> מהיעד</p>
+                  <p class="notif-time">אתמול</p>
+                </div>
+                <span class="notif-dot" aria-label="לא נקראה"></span>
+              </li>
+            </ul>
+          </div>
+        </div>
         <div class="user">
           <div class="avatar" aria-label="תמונת משתמש">א</div>
           <div class="user-meta">
@@ -709,6 +863,10 @@
           <span class="trend-note">לעומת החודש שעבר</span>
         </article>
       </section>
+      <p class="last-updated">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>
+        <span>עודכן לאחרונה: <time id="lastUpdated"></time></span>
+      </p>
 
       <!-- Date range filter (scopes both charts below) -->
       <div class="filters">
@@ -829,6 +987,98 @@
     const now = new Date();
     document.getElementById('today').textContent =
       'סקירה כללית · ' + now.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+    // ---------- Header clock ----------
+    {
+      const clock = document.getElementById('clock');
+      const clockText = document.getElementById('clockText');
+      const fmtTime = new Intl.DateTimeFormat('he-IL', { hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' });
+      const fmtFull = new Intl.DateTimeFormat('he-IL', { dateStyle: 'full', timeStyle: 'short' });
+      const tick = () => {
+        const t = new Date();
+        clockText.textContent = fmtTime.format(t);
+        clock.dateTime = t.toISOString();
+        clock.title = fmtFull.format(t);
+        setTimeout(tick, 1000 - t.getMilliseconds() + 5); // stay aligned to the second boundary
+      };
+      tick();
+    }
+
+    // ---------- Notifications dropdown ----------
+    {
+      const btn = document.getElementById('notifBtn');
+      const panel = document.getElementById('notifPanel');
+      const badge = document.getElementById('notifBadge');
+
+      const setUnread = (n) => {
+        badge.textContent = n;
+        badge.hidden = n === 0;
+        btn.setAttribute('aria-label', n ? `התראות (${n} שלא נקראו)` : 'התראות');
+      };
+
+      const toggle = (open) => {
+        panel.hidden = !open;
+        btn.setAttribute('aria-expanded', String(open));
+      };
+
+      btn.addEventListener('click', () => toggle(panel.hidden));
+
+      document.getElementById('markAllRead').addEventListener('click', () => {
+        panel.querySelectorAll('.notif-item.unread').forEach((li) => {
+          li.classList.remove('unread');
+          li.querySelector('.notif-dot').removeAttribute('aria-label');
+        });
+        setUnread(0);
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!panel.hidden && !e.target.closest('.notif')) toggle(false);
+      });
+
+      // Capture phase, so Esc closes the dropdown before anything else reacts to it.
+      document.addEventListener('keydown', (e) => {
+        if (e.key !== 'Escape' || panel.hidden) return;
+        e.stopPropagation();
+        toggle(false);
+        btn.focus();
+      }, true);
+    }
+
+    // ---------- Metric refresh pulse + "last updated" ----------
+    {
+      const label = document.getElementById('lastUpdated');
+      const rtf = new Intl.RelativeTimeFormat('he', { numeric: 'auto' });
+      const fmtExact = new Intl.DateTimeFormat('he-IL', { hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' });
+      let lastUpdated = new Date(Date.now() - 2 * 60 * 1000);
+
+      const renderLastUpdated = () => {
+        const secs = Math.round((Date.now() - lastUpdated) / 1000);
+        label.textContent =
+          secs < 10 ? 'ממש עכשיו'
+          : secs < 60 ? rtf.format(-secs, 'second')
+          : secs < 3600 ? rtf.format(-Math.floor(secs / 60), 'minute')
+          : rtf.format(-Math.floor(secs / 3600), 'hour');
+        label.dateTime = lastUpdated.toISOString();
+        label.title = fmtExact.format(lastUpdated);
+      };
+
+      const refresh = () => {
+        document.querySelectorAll('.metric').forEach((card) => {
+          card.classList.remove('pulse');
+          void card.offsetWidth; // restart the animation
+          card.classList.add('pulse');
+        });
+        lastUpdated = new Date();
+        renderLastUpdated();
+      };
+
+      document.querySelectorAll('.metric').forEach((card) =>
+        card.addEventListener('animationend', (e) => { if (e.target === card) card.classList.remove('pulse'); }));
+
+      renderLastUpdated();
+      setInterval(renderLastUpdated, 5000);
+      setInterval(refresh, 30000);
+    }
 
     const usd = (n, digits = 0) =>
       new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: digits, maximumFractionDigits: digits }).format(n);
