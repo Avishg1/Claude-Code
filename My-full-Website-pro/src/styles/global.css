@@ -419,3 +419,51 @@ img, svg { display: block; }
   .about__stats strong { font-size: 1.8rem; }
   .footer__inner { flex-direction: column; text-align: center; }
 }
+
+/* ===== מצבי טעינה ושגיאה ===== */
+.btn:disabled { opacity: 0.7; cursor: progress; transform: none; }
+
+.spinner {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: var(--white);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+.spinner--lg { width: 44px; height: 44px; border-width: 3px; border-top-color: var(--accent-bright); }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.page-loader { min-height: 100vh; min-height: 100svh; display: grid; place-items: center; }
+
+.error-screen {
+  min-height: 100vh;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 2rem;
+  text-align: center;
+}
+.error-screen h1 { font-size: var(--fs-section); }
+.error-screen p:not(.section__eyebrow) { color: var(--text-muted); margin-bottom: 1rem; }
+
+.section-error {
+  padding: 3rem 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.form__error { font-size: 0.85rem; color: #ff7a8a; }
+
+@media (prefers-reduced-motion: reduce) {
+  /* the global rule above turns animations off; keep the spinner turning slowly so loading is still visible */
+  .spinner { animation: spin 1.6s linear infinite !important; }
+}

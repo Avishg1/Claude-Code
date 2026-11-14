@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>לוח בקרה עסקי | נובה אנליטיקס</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --primary: #2a78d6;
+      --primary-soft: #e8f1fc;
+      --sidebar-bg: #0f172a;
+      --sidebar-text: #94a3b8;
+      --sidebar-active: #1e293b;
+      --surface: #ffffff;
+      --page-bg: #f8fafc;
+      --border: #e5e7eb;
+      --text-primary: #0f172a;
+      --text-secondary: #52514e;
+      --text-muted: #6b7280;
+      --up: #15803d;
+      --up-bg: #dcfce7;
+      --down: #b91c1c;
+      --down-bg: #fee2e2;
+      --shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 12px rgba(15, 23, 42, 0.06);
+      --radius: 12px;
+      --sidebar-w: 248px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Heebo', system-ui, sans-serif;
+      background: var(--surface);
+      color: var(--text-primary);
+      font-size: 15px;
+      line-height: 1.5;
+    }
+
+    .ltr { direction: ltr; unicode-bidi: isolate; display: inline-block; }
+
+    /* ---------- Sidebar (fixed, right side) ---------- */
+    .sidebar {
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: var(--sidebar-w);
+      background: var(--sidebar-bg);
+      color: var(--sidebar-text);
+      display: flex;
+      flex-direction: column;
+      padding: 24px 16px;
+      z-index: 20;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 8px 28px;
+      border-bottom: 1px solid #1e293b;
+      margin-bottom: 20px;
+    }
+    .brand-logo {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      background: var(--primary);
+      display: grid; place-items: center;
+      color: #fff; font-weight: 700; font-size: 18px;
+    }
+    .brand-name { color: #fff; font-size: 19px; font-weight: 700; }
+
+    .nav { list-style: none; display: flex; flex-direction: column; gap: 4px; }
+    .nav a {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 11px 14px;
+      border-radius: 8px;
+      color: var(--sidebar-text);
+      text-decoration: none;
+      font-weight: 500;
+      transition: background 0.15s, color 0.15s;
+    }
+    .nav a:hover { background: var(--sidebar-active); color: #e2e8f0; }
+    .nav a.active {
+      background: var(--primary);
+      color: #fff;
+    }
+    .nav svg { width: 20px; height: 20px; flex-shrink: 0; }
+
+    .sidebar-footer {
+      margin-top: auto;
+      font-size: 12px;
+      padding: 0 8px;
+      color: #64748b;
+    }
+
+    /* ---------- Main ---------- */
+    .main {
+      margin-right: var(--sidebar-w);
+      min-height: 100vh;
+      background: var(--surface);
+    }
+
+    .header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 16px 32px;
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .search {
+      position: relative;
+      width: min(420px, 100%);
+    }
+    .search svg {
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 18px; height: 18px;
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+    .search input {
+      width: 100%;
+      padding: 10px 42px 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font: inherit;
+      background: var(--page-bg);
+      color: var(--text-primary);
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .search input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-soft);
+      background: #fff;
+    }
+
+    .header-actions { display: flex; align-items: center; gap: 16px; }
+
+    .icon-btn {
+      position: relative;
+      width: 40px; height: 40px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #fff;
+      color: var(--text-secondary);
+      display: grid; place-items: center;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .icon-btn:hover { background: var(--page-bg); }
+    .icon-btn svg { width: 20px; height: 20px; }
+    .badge {
+      position: absolute;
+      top: 8px; left: 9px;
+      width: 8px; height: 8px;
+      background: #e34948;
+      border-radius: 50%;
+      box-shadow: 0 0 0 2px #fff;
+    }
+
+    .user { display: flex; align-items: center; gap: 10px; }
+    .avatar {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      background: var(--primary-soft);
+      color: var(--primary);
+      display: grid; place-items: center;
+      font-weight: 700;
+    }
+    .user-name { font-weight: 600; font-size: 14px; }
+    .user-role { font-size: 12px; color: var(--text-muted); }
+
+    .content { padding: 28px 32px 40px; }
+
+    .page-title { font-size: 24px; font-weight: 700; }
+    .page-subtitle { color: var(--text-muted); margin-bottom: 24px; }
+
+    /* ---------- Metric cards ---------- */
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .metric { padding: 20px; }
+    .metric-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .metric-name { color: var(--text-secondary); font-size: 14px; font-weight: 500; }
+    .metric-icon {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      background: var(--primary-soft);
+      color: var(--primary);
+      display: grid; place-items: center;
+    }
+    .metric-icon svg { width: 18px; height: 18px; }
+    .metric-value {
+      font-size: 30px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 10px;
+    }
+    .trend {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12.5px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 999px;
+    }
+    .trend svg { width: 14px; height: 14px; }
+    .trend.up { color: var(--up); background: var(--up-bg); }
+    .trend.down { color: var(--down); background: var(--down-bg); }
+    .trend-note { font-size: 12.5px; color: var(--text-muted); margin-right: 6px; }
+
+    /* ---------- Charts ---------- */
+    .charts {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+    .chart-card { padding: 20px; }
+    .card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 16px;
+    }
+    .card-title { font-size: 16px; font-weight: 600; }
+    .card-sub { font-size: 13px; color: var(--text-muted); }
+    .chart-wrap { position: relative; height: 290px; }
+
+    /* ---------- Date range filter ---------- */
+    .filters {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px 20px;
+      margin-bottom: 16px;
+    }
+    .range {
+      border: none;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .range-legend {
+      float: right; /* lets the legend sit inline with the options */
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+    .range-options {
+      display: inline-flex;
+      padding: 3px;
+      gap: 2px;
+      background: var(--page-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+    .range-options label { position: relative; }
+    .range-options input {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      margin: 0;
+      cursor: pointer;
+    }
+    .range-options span {
+      display: block;
+      padding: 6px 14px;
+      border-radius: 7px;
+      font-size: 13.5px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+    }
+    .range-options label:hover span { background: rgba(15, 23, 42, 0.04); }
+    .range-options input:checked + span {
+      background: var(--surface);
+      color: var(--text-primary);
+      font-weight: 600;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.12);
+    }
+    .range-options input:focus-visible + span {
+      outline: 2px solid var(--primary);
+      outline-offset: 1px;
+    }
+    .range-summary { font-size: 13px; color: var(--text-muted); }
+
+    /* ---------- Table ---------- */
+    .table-card { overflow: hidden; }
+    .table-card .card-head { padding: 20px 20px 0; }
+    .table-scroll { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 13px 20px; text-align: right; white-space: nowrap; }
+    th {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: var(--page-bg);
+      border-bottom: 1px solid var(--border);
+    }
+    td { border-bottom: 1px solid #f1f5f9; font-size: 14px; }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover { background: #f8fafc; }
+    .order-id { font-weight: 600; color: var(--primary); }
+    .amount { font-weight: 600; font-variant-numeric: tabular-nums; }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12.5px;
+      font-weight: 600;
+    }
+    .status::before {
+      content: '';
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+    .status.completed  { color: #15803d; background: #dcfce7; }
+    .status.pending    { color: #a16207; background: #fef9c3; }
+    .status.processing { color: #c2410c; background: #ffedd5; }
+
+    .link-btn {
+      font: inherit;
+      font-size: 13px;
+      color: var(--primary);
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    /* ---------- Responsive ---------- */
+    @media (max-width: 1200px) {
+      .metrics { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 960px) {
+      .charts { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 760px) {
+      :root { --sidebar-w: 72px; }
+      .brand-name, .nav span, .sidebar-footer { display: none; }
+      .brand { justify-content: center; padding-inline: 0; }
+      .nav a { justify-content: center; padding: 12px; }
+      .metrics { grid-template-columns: 1fr; }
+      .header, .content { padding-inline: 16px; }
+      .user-meta { display: none; }
+      .range { flex-wrap: wrap; }
+      .range-options { max-width: 100%; overflow-x: auto; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" aria-label="תפריט ראשי">
+    <div class="brand">
+      <div class="brand-logo" aria-hidden="true">נ</div>
+      <div class="brand-name">נובה אנליטיקס</div>
+    </div>
+
+    <nav>
+      <ul class="nav">
+        <li>
+          <a href="#" class="active" aria-current="page">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+            <span>לוח בקרה</span>
+          </a>
+        </li>
+        <li>
+          <a href="#">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            <span>לקוחות</span>
+          </a>
+        </li>
+        <li>
+          <a href="#">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+            <span>הזמנות</span>
+          </a>
+        </li>
+        <li>
+          <a href="#">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+            <span>מוצרים</span>
+          </a>
+        </li>
+        <li>
+          <a href="#">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            <span>הגדרות</span>
+          </a>
+        </li>
+      </ul>
+    </nav>
+
+    <div class="sidebar-footer">© 2026 נובה אנליטיקס</div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <header class="header">
+      <label class="search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <input type="search" placeholder="חיפוש הזמנות, לקוחות, מוצרים..." aria-label="חיפוש">
+      </label>
+
+      <div class="header-actions">
+        <button class="icon-btn" type="button" aria-label="התראות (3 חדשות)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+          <span class="badge" aria-hidden="true"></span>
+        </button>
+        <div class="user">
+          <div class="avatar" aria-label="תמונת משתמש">א</div>
+          <div class="user-meta">
+            <div class="user-name">אבישי</div>
+            <div class="user-role">מנהל מערכת</div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="content">
+      <h1 class="page-title">לוח בקרה</h1>
+      <p class="page-subtitle" id="today"></p>
+
+      <!-- Metric cards -->
+      <section class="metrics" aria-label="מדדים עיקריים">
+        <article class="card metric">
+          <div class="metric-top">
+            <span class="metric-name">סך ההכנסות</span>
+            <span class="metric-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            </span>
+          </div>
+          <div class="metric-value"><span class="ltr">$127,450</span></div>
+          <span class="trend up" aria-label="עלייה של 12.4% לעומת החודש שעבר">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m18 15-6-6-6 6"/></svg>
+            <span class="ltr">12.4%</span>
+          </span>
+          <span class="trend-note">לעומת החודש שעבר</span>
+        </article>
+
+        <article class="card metric">
+          <div class="metric-top">
+            <span class="metric-name">לקוחות חדשים</span>
+            <span class="metric-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6"/><path d="M22 11h-6"/></svg>
+            </span>
+          </div>
+          <div class="metric-value"><span class="ltr">1,247</span></div>
+          <span class="trend up" aria-label="עלייה של 8.2% לעומת החודש שעבר">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m18 15-6-6-6 6"/></svg>
+            <span class="ltr">8.2%</span>
+          </span>
+          <span class="trend-note">לעומת החודש שעבר</span>
+        </article>
+
+        <article class="card metric">
+          <div class="metric-top">
+            <span class="metric-name">ערך הזמנה ממוצע</span>
+            <span class="metric-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
+            </span>
+          </div>
+          <div class="metric-value"><span class="ltr">$102.15</span></div>
+          <span class="trend down" aria-label="ירידה של 2.1% לעומת החודש שעבר">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+            <span class="ltr">2.1%</span>
+          </span>
+          <span class="trend-note">לעומת החודש שעבר</span>
+        </article>
+
+        <article class="card metric">
+          <div class="metric-top">
+            <span class="metric-name">שיעור צמיחה</span>
+            <span class="metric-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 7 13.5 15.5 8.5 10.5 2 17"/><path d="M16 7h6v6"/></svg>
+            </span>
+          </div>
+          <div class="metric-value"><span class="ltr">+23.5%</span></div>
+          <span class="trend up" aria-label="עלייה של 4.3 נקודות אחוז לעומת החודש שעבר">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m18 15-6-6-6 6"/></svg>
+            <span class="ltr">4.3pp</span>
+          </span>
+          <span class="trend-note">לעומת החודש שעבר</span>
+        </article>
+      </section>
+
+      <!-- Date range filter (scopes both charts below) -->
+      <div class="filters">
+        <fieldset class="range" id="rangePicker">
+          <legend class="range-legend">טווח תאריכים</legend>
+          <div class="range-options">
+            <label><input type="radio" name="range" value="7d"><span>7 ימים</span></label>
+            <label><input type="radio" name="range" value="30d"><span>30 ימים</span></label>
+            <label><input type="radio" name="range" value="3m"><span>3 חודשים</span></label>
+            <label><input type="radio" name="range" value="6m"><span>6 חודשים</span></label>
+            <label><input type="radio" name="range" value="12m" checked><span>12 חודשים</span></label>
+          </div>
+        </fieldset>
+        <p class="range-summary" id="rangeSummary" aria-live="polite"></p>
+      </div>
+
+      <!-- Charts -->
+      <section class="charts" aria-label="גרפים">
+        <article class="card chart-card">
+          <div class="card-head">
+            <h2 class="card-title" id="revenueTitle">הכנסות חודשיות</h2>
+            <span class="card-sub" id="revenueSub">12 החודשים האחרונים</span>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="revenueChart" role="img" aria-label="גרף קו של הכנסות חודשיות ב-12 החודשים האחרונים"></canvas>
+          </div>
+        </article>
+
+        <article class="card chart-card">
+          <div class="card-head">
+            <h2 class="card-title">הכנסות לפי קטגוריית מוצר</h2>
+            <span class="card-sub" id="categorySub">12 החודשים האחרונים</span>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="categoryChart" role="img" aria-label="גרף עמודות של הכנסות לפי קטגוריית מוצר"></canvas>
+          </div>
+        </article>
+      </section>
+
+      <!-- Recent orders -->
+      <section class="card table-card" aria-label="הזמנות אחרונות">
+        <div class="card-head">
+          <h2 class="card-title">10 ההזמנות האחרונות</h2>
+          <button class="link-btn" type="button">לכל ההזמנות ←</button>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">מס׳ הזמנה</th>
+                <th scope="col">שם הלקוח</th>
+                <th scope="col">תאריך</th>
+                <th scope="col">סכום</th>
+                <th scope="col">סטטוס</th>
+              </tr>
+            </thead>
+            <tbody id="ordersBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    // ---------- Today's date ----------
+    const now = new Date();
+    document.getElementById('today').textContent =
+      'סקירה כללית · ' + now.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+    const usd = (n, digits = 0) =>
+      new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: digits, maximumFractionDigits: digits }).format(n);
+
+    const usdCompact = (n) =>
+      new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', notation: 'compact', maximumFractionDigits: 1 }).format(n);
+
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // ---------- Demo data ----------
+    // Deterministic pseudo-random numbers, so the demo shows the same figures on every load.
+    const seededRandom = (seed) => () => {
+      seed = (seed + 0x6d2b79f5) | 0;
+      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+
+    // Revenue per calendar month, oldest first; the last value is the current month.
+    const monthlyRevenue = [78200, 82400, 80100, 88900, 93500, 91200, 98700, 104300, 101800, 112600, 118900, 127450];
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    const monthStart = (monthsAgo) => new Date(today.getFullYear(), today.getMonth() - monthsAgo, 1);
+    const addDays = (date, n) => new Date(date.getFullYear(), date.getMonth(), date.getDate() + n);
+
+    // Daily revenue up to today: each month's daily rate comes from its monthly figure,
+    // with quieter weekends (Fri/Sat) and some day-to-day noise.
+    const daily = [];
+    {
+      const rand = seededRandom(20240611);
+      for (let m = 11; m >= 0; m--) {
+        const first = monthStart(m);
+        const daysInMonth = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
+        const lastDay = m === 0 ? today.getDate() : daysInMonth;
+        const rate = monthlyRevenue[11 - m] / daysInMonth;
+        for (let d = 1; d <= lastDay; d++) {
+          const date = new Date(first.getFullYear(), first.getMonth(), d);
+          const dow = date.getDay();
+          const weekday = dow === 6 ? 0.7 : dow === 5 ? 0.82 : 1.07;
+          daily.push({ date, revenue: Math.round(rate * weekday * (0.85 + rand() * 0.3)) });
+        }
+      }
+    }
+
+    // ---------- Buckets per range ----------
+    const fmt = (opts) => new Intl.DateTimeFormat('he-IL', opts);
+    const fmtDayShort = fmt({ day: 'numeric', month: 'short' });
+    const fmtDayLong = fmt({ weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    const fmtMonthShort = fmt({ month: 'short', year: '2-digit' });
+    const fmtMonthLong = fmt({ month: 'long', year: 'numeric' });
+    const fmtWeekRange = fmt({ day: 'numeric', month: 'short', year: 'numeric' });
+
+    const dailyBuckets = (count) =>
+      daily.slice(-count).map((d) => ({
+        label: fmtDayShort.format(d.date),
+        title: fmtDayLong.format(d.date),
+        value: d.revenue,
+      }));
+
+    // Weeks of 7 days, the last one ending today.
+    const weeklyBuckets = (count) => {
+      const days = daily.slice(-count * 7);
+      const weeks = [];
+      for (let i = 0; i < days.length; i += 7) {
+        const week = days.slice(i, i + 7);
+        const start = week[0].date;
+        const end = week[week.length - 1].date;
+        weeks.push({
+          label: fmtDayShort.format(start),
+          title: 'שבוע ' + fmtWeekRange.formatRange(start, end),
+          value: week.reduce((sum, d) => sum + d.revenue, 0),
+        });
+      }
+      return weeks;
+    };
+
+    const monthlyBuckets = (count) =>
+      monthlyRevenue.slice(-count).map((value, i) => {
+        const date = monthStart(count - 1 - i);
+        return { label: fmtMonthShort.format(date), title: fmtMonthLong.format(date), value };
+      });
+
+    const GRAIN = {
+      day: { title: 'הכנסות יומיות', a11y: 'יומיות' },
+      week: { title: 'הכנסות שבועיות', a11y: 'שבועיות' },
+      month: { title: 'הכנסות חודשיות', a11y: 'חודשיות' },
+    };
+
+    const RANGES = {
+      '7d': { label: '7 הימים האחרונים', grain: 'day', build: () => dailyBuckets(7) },
+      '30d': { label: '30 הימים האחרונים', grain: 'day', build: () => dailyBuckets(30) },
+      '3m': { label: '3 החודשים האחרונים', grain: 'week', build: () => weeklyBuckets(13) },
+      '6m': { label: '6 החודשים האחרונים', grain: 'month', build: () => monthlyBuckets(6) },
+      '12m': { label: '12 החודשים האחרונים', grain: 'month', build: () => monthlyBuckets(12) },
+    };
+
+    // Category split of the range's total, so both charts always add up to the same number.
+    const categories = ['אלקטרוניקה', 'ביגוד', 'בית וגן', 'ספורט', 'יופי', 'ספרים'];
+    const categoryWeights = [342800, 248600, 196300, 151400, 98200, 61500];
+
+    const categorySplit = (rangeKey, total) => {
+      const rand = seededRandom([...rangeKey].reduce((h, ch) => h * 31 + ch.charCodeAt(0), 7));
+      const weights = categoryWeights.map((w) => w * (0.88 + rand() * 0.24));
+      const sum = weights.reduce((a, b) => a + b, 0);
+      const values = weights.map((w) => Math.round((total * w) / sum));
+      values[0] += total - values.reduce((a, b) => a + b, 0); // rounding leftover, so the sum matches exactly
+      return values;
+    };
+
+    // ---------- Chart defaults ----------
+    const PRIMARY = '#2a78d6';
+    Chart.defaults.font.family = "'Heebo', system-ui, sans-serif";
+    Chart.defaults.font.size = 12;
+    Chart.defaults.color = '#6b7280';
+
+    const tooltipBase = {
+      rtl: true,
+      textDirection: 'rtl',
+      backgroundColor: '#0f172a',
+      padding: 10,
+      cornerRadius: 8,
+      titleFont: { weight: '500' },
+      titleColor: '#cbd5e1',
+      bodyFont: { size: 14, weight: '700' },
+      displayColors: false,
+      caretPadding: 8,
+    };
+
+    const gridColor = '#eef0f3';
+    const UPDATE_ANIMATION = reduceMotion ? false : { duration: 650, easing: 'easeInOutQuart' };
+
+    // Vertical hairline at the hovered point, so it's clear which date the tooltip refers to.
+    const crosshairPlugin = {
+      id: 'crosshair',
+      afterDatasetsDraw(chart) {
+        const active = chart.tooltip?.getActiveElements();
+        if (!active?.length) return;
+        const x = active[0].element.x;
+        const { top, bottom } = chart.chartArea;
+        const c = chart.ctx;
+        c.save();
+        c.beginPath();
+        c.moveTo(x, top);
+        c.lineTo(x, bottom);
+        c.lineWidth = 1;
+        c.strokeStyle = '#94a3b8';
+        c.setLineDash([3, 3]);
+        c.stroke();
+        c.restore();
+      },
+    };
+
+    // First-load effect: the line draws itself from the oldest point to the newest.
+    // Works by widening a clip rectangle over the plot area.
+    const revealPlugin = {
+      id: 'reveal',
+      beforeDatasetsDraw(chart) {
+        const p = chart.$reveal ?? 1;
+        if (p >= 1) return;
+        const { left, top, width, height } = chart.chartArea;
+        chart.ctx.save();
+        chart.ctx.beginPath();
+        chart.ctx.rect(left - 8, top - 8, (width + 16) * p, height + 16);
+        chart.ctx.clip();
+        chart.$clipped = true;
+      },
+      afterDatasetsDraw(chart) {
+        if (!chart.$clipped) return;
+        chart.ctx.restore();
+        chart.$clipped = false;
+      },
+    };
+
+    const drawIn = (chart, duration) => {
+      const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2);
+      const start = performance.now();
+      const run = (chart.$revealRun = (chart.$revealRun ?? 0) + 1);
+      const step = (t) => {
+        if (run !== chart.$revealRun) return; // cancelled, e.g. the range changed mid-animation
+        const p = Math.min((t - start) / duration, 1);
+        chart.$reveal = ease(p);
+        chart.draw();
+        if (p < 1) requestAnimationFrame(step);
+      };
+      chart.$reveal = 0;
+      requestAnimationFrame(step);
+    };
+
+    const initialRange = document.querySelector('input[name="range"]:checked').value;
+    let current = { key: initialRange, buckets: RANGES[initialRange].build() };
+
+    // ---------- Revenue over time (line) ----------
+    const revenueChart = new Chart(document.getElementById('revenueChart'), {
+      type: 'line',
+      data: {
+        labels: current.buckets.map((b) => b.label),
+        datasets: [{
+          label: 'הכנסות',
+          data: current.buckets.map((b) => b.value),
+          borderColor: PRIMARY,
+          borderWidth: 2,
+          cubicInterpolationMode: 'monotone', // smooth, but never overshoots the real values
+          fill: true,
+          backgroundColor: (ctx) => {
+            const { chart } = ctx;
+            const { ctx: c, chartArea } = chart;
+            if (!chartArea) return 'rgba(42,120,214,0.08)';
+            const g = c.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+            g.addColorStop(0, 'rgba(42,120,214,0.18)');
+            g.addColorStop(1, 'rgba(42,120,214,0)');
+            return g;
+          },
+          pointRadius: 0,
+          pointHitRadius: 12,
+          pointHoverRadius: 5,
+          pointHoverBackgroundColor: PRIMARY,
+          pointHoverBorderColor: '#fff',
+          pointHoverBorderWidth: 2,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false, // the first appearance is the draw-in effect; updates animate normally
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            ...tooltipBase,
+            callbacks: {
+              title: (items) => current.buckets[items[0].dataIndex]?.title ?? '',
+              label: (c) => 'הכנסות: ' + usd(c.parsed.y),
+            },
+          },
+        },
+        scales: {
+          x: { grid: { display: false }, border: { display: false }, ticks: { maxRotation: 0, autoSkip: true, autoSkipPadding: 14 } },
+          y: {
+            position: 'right',
+            grace: '8%',
+            grid: { color: gridColor },
+            border: { display: false },
+            ticks: { callback: (v) => usdCompact(v), maxTicksLimit: 6 },
+          },
+        },
+      },
+      plugins: [revealPlugin, crosshairPlugin],
+    });
+
+    // ---------- Revenue by category (bars) ----------
+    let barsGrown = false;
+    const total = (buckets) => buckets.reduce((sum, b) => sum + b.value, 0);
+    let categoryValues = categorySplit(current.key, total(current.buckets));
+
+    const categoryChart = new Chart(document.getElementById('categoryChart'), {
+      type: 'bar',
+      data: {
+        labels: categories,
+        datasets: [{
+          label: 'הכנסות',
+          data: categoryValues,
+          backgroundColor: PRIMARY,
+          hoverBackgroundColor: '#1f63b5',
+          borderRadius: { topLeft: 4, topRight: 4 },
+          borderSkipped: 'bottom',
+          maxBarThickness: 42,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        // On first load the bars grow upward from the baseline, one after another.
+        animation: reduceMotion ? false : {
+          duration: 900,
+          easing: 'easeOutQuart',
+          delay: (ctx) => (ctx.type === 'data' && ctx.mode === 'default' && !barsGrown ? ctx.dataIndex * 90 : 0),
+          onComplete: () => { barsGrown = true; },
+        },
+        // The whole column is the hover target, not just the painted bar.
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            ...tooltipBase,
+            callbacks: {
+              label: (c) => usd(c.parsed.y),
+              afterLabel: (c) => {
+                const sum = categoryValues.reduce((a, b) => a + b, 0);
+                return `${Math.round((c.parsed.y / sum) * 100)}% מסך ההכנסות`;
+              },
+            },
+          },
+        },
+        scales: {
+          x: { grid: { display: false }, border: { display: false } },
+          y: {
+            position: 'right',
+            beginAtZero: true,
+            grid: { color: gridColor },
+            border: { display: false },
+            ticks: { callback: (v) => usdCompact(v), maxTicksLimit: 6 },
+          },
+        },
+      },
+    });
+
+    // ---------- Date range ----------
+    const summaryEl = document.getElementById('rangeSummary');
+
+    const renderRangeText = () => {
+      const range = RANGES[current.key];
+      const grain = GRAIN[range.grain];
+      document.getElementById('revenueTitle').textContent = grain.title;
+      document.getElementById('revenueSub').textContent = range.label;
+      document.getElementById('categorySub').textContent = range.label;
+      document.getElementById('revenueChart').setAttribute('aria-label', `גרף קו של הכנסות ${grain.a11y} ב-${range.label}`);
+      document.getElementById('categoryChart').setAttribute('aria-label', `גרף עמודות של הכנסות לפי קטגוריית מוצר ב-${range.label}`);
+
+      const amount = document.createElement('span');
+      amount.className = 'ltr';
+      amount.textContent = usd(total(current.buckets));
+      summaryEl.replaceChildren(`סה״כ הכנסות ב-${range.label}: `, amount);
+    };
+
+    const setRange = (key) => {
+      current = { key, buckets: RANGES[key].build() };
+      categoryValues = categorySplit(key, total(current.buckets));
+
+      revenueChart.$revealRun = (revenueChart.$revealRun ?? 0) + 1; // stop a running draw-in
+      revenueChart.$reveal = 1;
+      revenueChart.options.animation = UPDATE_ANIMATION;
+      revenueChart.data.labels = current.buckets.map((b) => b.label);
+      revenueChart.data.datasets[0].data = current.buckets.map((b) => b.value);
+      revenueChart.update();
+
+      barsGrown = true;
+      categoryChart.options.animation = UPDATE_ANIMATION;
+      categoryChart.data.datasets[0].data = categoryValues;
+      categoryChart.update();
+
+      renderRangeText();
+    };
+
+    document.getElementById('rangePicker').addEventListener('change', (e) => setRange(e.target.value));
+
+    renderRangeText();
+    if (!reduceMotion) drawIn(revenueChart, 1400);
+
+    // ---------- Recent orders ----------
+    const STATUS = {
+      completed:  'הושלמה',
+      pending:    'ממתינה',
+      processing: 'בטיפול',
+    };
+
+    const daysAgo = (n, h) => { const d = new Date(now); d.setDate(d.getDate() - n); d.setHours(h, 0, 0, 0); return d; };
+
+    const orders = [
+      { id: '#10458', name: 'נועה כהן',     date: daysAgo(0, 14), amount: 249.90,  status: 'processing' },
+      { id: '#10457', name: 'יוסי לוי',      date: daysAgo(0, 11), amount: 89.50,   status: 'pending' },
+      { id: '#10456', name: 'מיכל אברהם',   date: daysAgo(1, 17), amount: 432.00,  status: 'completed' },
+      { id: '#10455', name: 'דניאל מזרחי',  date: daysAgo(1, 9),  amount: 156.75,  status: 'completed' },
+      { id: '#10454', name: 'שירה פרץ',     date: daysAgo(2, 15), amount: 74.20,   status: 'processing' },
+      { id: '#10453', name: 'אורי ביטון',   date: daysAgo(2, 10), amount: 1120.00, status: 'completed' },
+      { id: '#10452', name: 'תמר שפירא',    date: daysAgo(3, 16), amount: 63.40,   status: 'pending' },
+      { id: '#10451', name: 'איתי גולן',    date: daysAgo(3, 12), amount: 289.99,  status: 'completed' },
+      { id: '#10450', name: 'רוני אלון',    date: daysAgo(4, 13), amount: 118.30,  status: 'completed' },
+      { id: '#10449', name: 'הדר וקנין',    date: daysAgo(5, 18), amount: 205.60,  status: 'pending' },
+    ];
+
+    document.getElementById('ordersBody').innerHTML = orders.map((o) => `
+      <tr>
+        <td class="order-id"><span class="ltr">${o.id}</span></td>
+        <td>${o.name}</td>
+        <td>${o.date.toLocaleDateString('he-IL', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
+        <td class="amount"><span class="ltr">${usd(o.amount, 2)}</span></td>
+        <td><span class="status ${o.status}">${STATUS[o.status]}</span></td>
+      </tr>
+    `).join('');
+  </script>
+</body>
+</html>
