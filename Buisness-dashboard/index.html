@@ -378,32 +378,95 @@
     .table-search { width: min(320px, 100%); }
     .table-search input { padding-block: 8px; }
 
+    /* Floating bulk-action bar (bottom of the viewport, centered over the main column) */
+    .bulk-dock {
+      position: fixed;
+      bottom: 24px;
+      right: var(--sidebar-w);
+      left: 0;
+      z-index: 30;
+      display: flex;
+      justify-content: center;
+      padding-inline: 16px;
+      pointer-events: none;
+    }
     .bulk-bar {
       display: flex;
       align-items: center;
-      gap: 12px;
-      padding: 6px 8px 6px 6px;
-      padding-inline-start: 14px;
-      border-radius: 10px;
-      background: var(--primary-soft);
-      font-size: 13.5px;
-      font-weight: 600;
-      color: var(--primary);
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 8px;
+      padding-inline-start: 18px;
+      max-width: 100%;
+      border-radius: 14px;
+      background: var(--sidebar-bg);
+      color: #e2e8f0;
+      font-size: 14px;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.28), 0 2px 6px rgba(15, 23, 42, 0.16);
+      pointer-events: auto;
+      transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.18s, visibility 0s;
     }
-    .bulk-bar[hidden] { display: none; }
-    .bulk-btn {
+    .bulk-bar[data-open="false"] {
+      transform: translateY(calc(100% + 32px));
+      opacity: 0;
+      visibility: hidden;
+      transition: transform 0.18s ease-in, opacity 0.18s, visibility 0s 0.18s;
+    }
+    @media (prefers-reduced-motion: reduce) { .bulk-bar, .bulk-bar[data-open="false"] { transition: none; } }
+
+    .bulk-count { font-weight: 600; color: #fff; white-space: nowrap; }
+    .bulk-select-all {
       font: inherit;
       font-size: 13px;
-      padding: 6px 12px;
-      border-radius: 7px;
-      border: 1px solid transparent;
+      color: #93c5fd;
+      background: none;
+      border: none;
       cursor: pointer;
-      background: var(--primary);
-      color: #fff;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      padding: 4px;
+      white-space: nowrap;
     }
-    .bulk-btn:hover { background: #1f63b5; }
-    .bulk-btn.ghost { background: transparent; color: var(--primary); }
-    .bulk-btn.ghost:hover { background: rgba(42, 120, 214, 0.1); }
+    .bulk-select-all:hover { color: #bfdbfe; }
+    .bulk-select-all[hidden] { display: none; }
+    .bulk-divider { width: 1px; height: 24px; background: #334155; margin-inline: 6px; }
+
+    .bulk-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font: inherit;
+      font-size: 13.5px;
+      font-weight: 500;
+      padding: 8px 12px;
+      border-radius: 9px;
+      border: none;
+      cursor: pointer;
+      background: transparent;
+      color: #e2e8f0;
+      white-space: nowrap;
+      transition: background 0.15s, color 0.15s;
+    }
+    .bulk-btn svg { width: 17px; height: 17px; flex-shrink: 0; }
+    .bulk-btn:hover { background: var(--sidebar-active); color: #fff; }
+    .bulk-btn.primary { background: var(--primary); color: #fff; }
+    .bulk-btn.primary:hover { background: #1f63b5; }
+    .bulk-btn.danger:hover { background: rgba(239, 68, 68, 0.16); color: #fca5a5; }
+    .bulk-btn.icon-only { padding: 8px; color: #94a3b8; }
+    .bulk-btn:focus-visible, .bulk-select-all:focus-visible { outline: 2px solid #93c5fd; outline-offset: 1px; }
+
+    /* Keep the pagination reachable above the floating bar */
+    body.has-selection .content { padding-bottom: 110px; }
+
+    .sr-only {
+      position: absolute;
+      width: 1px; height: 1px;
+      margin: -1px; padding: 0;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+      border: 0;
+    }
 
     /* Checkboxes */
     th.check, td.check { width: 44px; padding-inline-end: 0; }
@@ -504,6 +567,9 @@
       .user-meta { display: none; }
       .range { flex-wrap: wrap; }
       .range-options { max-width: 100%; overflow-x: auto; }
+      .bulk-dock { bottom: 12px; padding-inline: 8px; }
+      .bulk-btn .label { display: none; }
+      .bulk-divider { display: none; }
     }
   </style>
 </head>
@@ -694,12 +760,6 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
             <input type="search" id="ordersSearch" placeholder="חיפוש לפי מס׳ הזמנה, לקוח, סטטוס..." aria-label="חיפוש בטבלת ההזמנות" aria-controls="ordersBody" autocomplete="off">
           </label>
-
-          <div class="bulk-bar" id="bulkBar" role="region" aria-label="פעולות על הזמנות שנבחרו" hidden>
-            <span id="bulkCount"></span>
-            <button class="bulk-btn" type="button" id="bulkComplete">סמן כהושלמו</button>
-            <button class="bulk-btn ghost" type="button" id="bulkClear">ביטול בחירה</button>
-          </div>
         </div>
 
         <div class="table-scroll">
@@ -735,6 +795,32 @@
           </div>
         </nav>
       </section>
+
+      <!-- Floating bulk-action bar -->
+      <div class="bulk-dock">
+        <div class="bulk-bar" id="bulkBar" role="region" aria-label="פעולות על הזמנות שנבחרו" data-open="false">
+          <span class="bulk-count" id="bulkCount"></span>
+          <button type="button" class="bulk-select-all" id="bulkSelectAll" hidden></button>
+          <span class="bulk-divider" aria-hidden="true"></span>
+
+          <button type="button" class="bulk-btn" id="bulkExport" aria-label="ייצוא הנבחרות" title="ייצוא הנבחרות לקובץ CSV">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>
+            <span class="label">ייצוא הנבחרות</span>
+          </button>
+          <button type="button" class="bulk-btn danger" id="bulkDelete" aria-label="מחיקת הנבחרות" title="מחיקת הנבחרות">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+            <span class="label">מחיקת הנבחרות</span>
+          </button>
+          <button type="button" class="bulk-btn primary" id="bulkComplete" aria-label="סימון כהושלמו" title="סימון כהושלמו">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+            <span class="label">סימון כהושלמו</span>
+          </button>
+          <button type="button" class="bulk-btn icon-only" id="bulkClear" aria-label="ביטול הבחירה" title="ביטול הבחירה (Esc)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          </button>
+        </div>
+      </div>
+      <p class="sr-only" id="bulkStatus" role="status"></p>
     </main>
   </div>
 
@@ -1138,11 +1224,12 @@
       status: (a, b) => STATUS_RANK[a.status] - STATUS_RANK[b.status],
     };
 
-    const table = { query: '', sortKey: 'date', sortDir: 'desc', page: 1, selected: new Set(), pageRows: [] };
+    const table = { query: '', sortKey: 'date', sortDir: 'desc', page: 1, selected: new Set(), allRows: [], pageRows: [] };
 
     const ordersBody = document.getElementById('ordersBody');
     const selectPage = document.getElementById('selectPage');
     const bulkBar = document.getElementById('bulkBar');
+    const bulkSelectAll = document.getElementById('bulkSelectAll');
     const pageSummary = document.getElementById('pageSummary');
     const prevBtn = document.getElementById('prevPage');
     const nextBtn = document.getElementById('nextPage');
@@ -1153,12 +1240,22 @@
       [`#${o.num}`, o.name, o.dateText, usd(o.amount, 2), String(o.amount), STATUS[o.status]]
         .join(' ').toLowerCase().includes(q);
 
-    const visibleOrders = () => {
-      const q = table.query.trim().toLowerCase();
-      const rows = q ? orders.filter((o) => matches(o, q)) : orders.slice();
+    const sortRows = (rows) => {
       const dir = table.sortDir === 'asc' ? 1 : -1;
       const cmp = COMPARE[table.sortKey];
       return rows.sort((a, b) => cmp(a, b) * dir || b.date - a.date); // ties: newest first
+    };
+
+    const visibleOrders = () => {
+      const q = table.query.trim().toLowerCase();
+      return sortRows(q ? orders.filter((o) => matches(o, q)) : orders.slice());
+    };
+
+    const ordersCount = (n) => (n === 1 ? 'הזמנה אחת' : `${n} הזמנות`);
+    const announce = (msg) => {
+      const el = document.getElementById('bulkStatus');
+      el.textContent = '';
+      requestAnimationFrame(() => { el.textContent = msg; });
     };
 
     // Header checkbox, highlighted rows and the bulk bar — updated without rebuilding rows,
@@ -1177,8 +1274,17 @@
       });
 
       const n = table.selected.size;
-      bulkBar.hidden = n === 0;
+      const open = n > 0;
+      bulkBar.dataset.open = String(open);
+      bulkBar.inert = !open;
+      document.body.classList.toggle('has-selection', open);
       document.getElementById('bulkCount').textContent = n === 1 ? 'נבחרה הזמנה אחת' : `נבחרו ${n} הזמנות`;
+
+      // Whole page selected but more results exist → offer to select all of them.
+      const remaining = table.allRows.filter((o) => !table.selected.has(o.num)).length;
+      const offer = selectPage.checked && remaining > 0;
+      bulkSelectAll.hidden = !offer;
+      if (offer) bulkSelectAll.textContent = `בחירת כל ${table.allRows.length} התוצאות`;
     };
 
     const renderTable = () => {
@@ -1186,6 +1292,7 @@
       const pages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
       table.page = Math.min(table.page, pages);
       const start = (table.page - 1) * PAGE_SIZE;
+      table.allRows = rows;
       table.pageRows = rows.slice(start, start + PAGE_SIZE);
 
       ordersBody.innerHTML = table.pageRows.length
@@ -1250,17 +1357,73 @@
     prevBtn.addEventListener('click', () => { table.page--; renderTable(); });
     nextBtn.addEventListener('click', () => { table.page++; renderTable(); });
 
+    // ---------- Bulk actions ----------
+    const selectedOrders = () => sortRows(orders.filter((o) => table.selected.has(o.num)));
+
+    const clearSelection = () => {
+      table.selected.clear();
+      renderSelection();
+      selectPage.focus();
+    };
+
+    bulkSelectAll.addEventListener('click', () => {
+      table.allRows.forEach((o) => table.selected.add(o.num));
+      renderSelection();
+      announce(`נבחרו כל ${table.allRows.length} התוצאות`);
+      document.getElementById('bulkExport').focus();
+    });
+
+    // CSV with a BOM so Excel opens the Hebrew text correctly.
+    document.getElementById('bulkExport').addEventListener('click', () => {
+      const rows = selectedOrders();
+      const fmtExportDate = fmt({ day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+      const cell = (v) => {
+        const s = String(v);
+        return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+      };
+      const lines = [
+        ['מס׳ הזמנה', 'שם הלקוח', 'תאריך', 'סכום (USD)', 'סטטוס'],
+        ...rows.map((o) => [o.num, o.name, fmtExportDate.format(o.date), o.amount.toFixed(2), STATUS[o.status]]),
+      ].map((r) => r.map(cell).join(','));
+
+      const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = Object.assign(document.createElement('a'), {
+        href: url,
+        download: `orders-${new Date().toISOString().slice(0, 10)}.csv`,
+      });
+      document.body.append(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      announce(`יוצאו ${ordersCount(rows.length)} לקובץ CSV`);
+    });
+
+    document.getElementById('bulkDelete').addEventListener('click', () => {
+      const n = table.selected.size;
+      if (!confirm(`למחוק ${ordersCount(n)}? לא ניתן לבטל פעולה זו.`)) return;
+      for (let i = orders.length - 1; i >= 0; i--) {
+        if (table.selected.has(orders[i].num)) orders.splice(i, 1);
+      }
+      table.selected.clear();
+      renderTable();
+      selectPage.focus();
+      announce(`נמחקו ${ordersCount(n)}`);
+    });
+
     document.getElementById('bulkComplete').addEventListener('click', () => {
+      const n = table.selected.size;
       orders.forEach((o) => { if (table.selected.has(o.num)) o.status = 'completed'; });
       table.selected.clear();
       renderTable();
       selectPage.focus();
+      announce(`${ordersCount(n)} סומנו כהושלמו`);
     });
 
-    document.getElementById('bulkClear').addEventListener('click', () => {
-      table.selected.clear();
-      renderSelection();
-      selectPage.focus();
+    document.getElementById('bulkClear').addEventListener('click', clearSelection);
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && table.selected.size && !e.target.closest?.('input[type="search"]')) clearSelection();
     });
 
     renderTable();
