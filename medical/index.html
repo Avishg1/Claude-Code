@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>לוח בקרה רפואי</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-soft: #dbeafe;
+      --sidebar-bg: #0f172a;
+      --sidebar-text: #cbd5e1;
+      --sidebar-w: 250px;
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --text-2: #475569;
+      --muted: #94a3b8;
+      --good: #15803d;
+      --bad: #b91c1c;
+      --shadow: 0 1px 3px rgba(15, 23, 42, .06), 0 4px 12px rgba(15, 23, 42, .05);
+      --radius: 12px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Segoe UI", "Rubik", "Heebo", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 15px;
+    }
+    svg.icon { width: 20px; height: 20px; flex-shrink: 0; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+    /* ===== Sidebar (fixed, right side) ===== */
+    .sidebar {
+      position: fixed;
+      top: 0; bottom: 0; right: 0;
+      width: var(--sidebar-w);
+      background: var(--sidebar-bg);
+      color: var(--sidebar-text);
+      display: flex;
+      flex-direction: column;
+      padding: 24px 16px;
+      z-index: 10;
+    }
+    .patient {
+      display: flex; align-items: center; gap: 12px;
+      padding: 8px 8px 24px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      margin-bottom: 20px;
+    }
+    .patient-avatar {
+      width: 44px; height: 44px; border-radius: 50%;
+      background: var(--primary); color: #fff;
+      display: grid; place-items: center;
+      font-weight: 700; font-size: 17px;
+    }
+    .patient-label { font-size: 12px; color: var(--muted); }
+    .patient-name { font-size: 17px; font-weight: 600; color: #fff; }
+    .nav { list-style: none; display: flex; flex-direction: column; gap: 4px; }
+    .nav a {
+      display: flex; align-items: center; gap: 12px;
+      padding: 11px 14px; border-radius: 8px;
+      color: var(--sidebar-text); text-decoration: none;
+      transition: background .15s, color .15s;
+    }
+    .nav a:hover { background: rgba(255,255,255,.06); color: #fff; }
+    .nav a.active { background: var(--primary); color: #fff; }
+    .nav a:focus-visible { outline: 2px solid #93c5fd; outline-offset: 2px; }
+
+    /* ===== Main ===== */
+    .main { margin-right: var(--sidebar-w); min-height: 100vh; background: var(--surface); }
+    .header {
+      position: sticky; top: 0; z-index: 5;
+      display: flex; align-items: center; gap: 16px;
+      padding: 14px 32px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+    .search {
+      flex: 1; max-width: 420px; position: relative;
+    }
+    .search svg { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); width: 18px; height: 18px; }
+    .search input {
+      width: 100%; padding: 10px 40px 10px 14px;
+      border: 1px solid var(--border); border-radius: 8px;
+      font: inherit; background: var(--bg);
+    }
+    .search input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); background: #fff; }
+    .header-actions { margin-right: auto; display: flex; align-items: center; gap: 12px; }
+    .icon-btn {
+      position: relative; width: 40px; height: 40px; border-radius: 50%;
+      border: 1px solid var(--border); background: #fff; color: var(--text-2);
+      display: grid; place-items: center; cursor: pointer;
+    }
+    .icon-btn:hover { color: var(--primary); border-color: var(--primary-soft); }
+    .badge-dot {
+      position: absolute; top: 8px; left: 9px;
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #ef4444; border: 2px solid #fff;
+    }
+    .user-avatar {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: linear-gradient(135deg, #93c5fd, var(--primary));
+      display: grid; place-items: center; color: #fff;
+    }
+
+    .content { padding: 28px 32px 40px; }
+    .page-title { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+    .page-sub { color: var(--text-2); margin-bottom: 24px; font-size: 14px; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    /* Metric cards */
+    .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 24px; }
+    .metric { padding: 20px 22px; }
+    .metric-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .metric-name { color: var(--text-2); font-size: 14px; font-weight: 500; }
+    .metric-icon { width: 36px; height: 36px; border-radius: 8px; background: var(--primary-soft); color: var(--primary); display: grid; place-items: center; }
+    .metric-icon svg { width: 18px; height: 18px; }
+    .metric-value { font-size: 34px; font-weight: 700; line-height: 1.1; direction: ltr; text-align: right; }
+    .metric-value small { font-size: 16px; font-weight: 500; color: var(--text-2); margin-inline-start: 2px; }
+    .trend { display: inline-flex; align-items: center; gap: 4px; margin-top: 10px; font-size: 13px; font-weight: 600; padding: 3px 8px; border-radius: 999px; }
+    .trend svg { width: 14px; height: 14px; stroke-width: 2.5; }
+    .trend.good { color: var(--good); background: #dcfce7; }
+    .trend.bad { color: var(--bad); background: #fee2e2; }
+    .trend-note { color: var(--muted); font-size: 12px; margin-inline-start: 6px; }
+
+    /* Charts */
+    .charts { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
+    .chart-card { padding: 20px 22px; }
+    .card-title { font-size: 16px; font-weight: 600; }
+    .card-sub { font-size: 13px; color: var(--muted); margin-top: 2px; margin-bottom: 16px; }
+    .chart-wrap { position: relative; height: 280px; }
+
+    /* Table */
+    .table-card { padding: 20px 0 8px; }
+    .table-card .card-head { padding: 0 22px 14px; }
+    .table-scroll { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { padding: 13px 22px; text-align: right; white-space: nowrap; }
+    th { font-size: 12px; font-weight: 600; color: var(--text-2); background: var(--bg); border-bottom: 1px solid var(--border); }
+    td { border-bottom: 1px solid var(--border); }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover { background: #f8fbff; }
+    td.date { color: var(--text-2); font-variant-numeric: tabular-nums; }
+    .clinic { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: 13px; font-weight: 600; }
+    .clinic::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+    .clinic.hospital { background: #dcfce7; color: #166534; }
+    .clinic.phone { background: #fef9c3; color: #854d0e; }
+    .clinic.office { background: #fee2e2; color: #991b1b; }
+    .no-results { text-align: center; color: var(--muted); padding: 24px; }
+
+    @media (max-width: 1200px) {
+      .metrics { grid-template-columns: repeat(2, 1fr); }
+      .charts { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 760px) {
+      :root { --sidebar-w: 72px; }
+      .patient-text, .nav span { display: none; }
+      .patient { justify-content: center; padding-inline: 0; }
+      .nav a { justify-content: center; }
+      .metrics { grid-template-columns: 1fr; }
+      .header, .content { padding-inline: 16px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" aria-label="תפריט ניווט">
+    <div class="patient">
+      <div class="patient-avatar" aria-hidden="true">יכ</div>
+      <div class="patient-text">
+        <div class="patient-label">מטופל</div>
+        <div class="patient-name">ישראל כהן</div>
+      </div>
+    </div>
+    <nav>
+      <ul class="nav">
+        <li><a href="#" class="active" aria-current="page">
+          <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+          <span>לוח בקרה</span></a></li>
+        <li><a href="#">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M9 2v6l-5 9a2 2 0 0 0 1.7 3h12.6a2 2 0 0 0 1.7-3l-5-9V2"/><path d="M8 2h8"/><path d="M7 14h10"/></svg>
+          <span>תוצאות בדיקות</span></a></li>
+        <li><a href="#">
+          <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M12 14v4M10 16h4"/></svg>
+          <span>ביקורים</span></a></li>
+        <li><a href="#">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M10.5 20.5 3.5 13.5a5 5 0 0 1 7-7l7 7a5 5 0 0 1-7 7Z"/><path d="m8.5 8.5 7 7"/></svg>
+          <span>תרופות</span></a></li>
+        <li><a href="#">
+          <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg>
+          <span>הגדרות</span></a></li>
+      </ul>
+    </nav>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <header class="header">
+      <label class="search">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input type="search" id="search" placeholder="חיפוש ביקור, רופא, אבחנה…" aria-label="חיפוש">
+      </label>
+      <div class="header-actions">
+        <button class="icon-btn" aria-label="התראות (3 חדשות)">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg>
+          <span class="badge-dot"></span>
+        </button>
+        <div class="user-avatar" role="img" aria-label="תמונת משתמש">
+          <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+        </div>
+      </div>
+    </header>
+
+    <main class="content">
+      <h1 class="page-title">לוח בקרה</h1>
+      <p class="page-sub" id="today"></p>
+
+      <!-- Metric cards -->
+      <section class="metrics" aria-label="מדדים עיקריים">
+        <article class="card metric">
+          <div class="metric-top">
+            <span class="metric-name">המוגלובין מסוכרר (HbA1c)</span>
+            <span class="metric-icon"><svg class="icon" viewBox="0 0 24 24"><path d="M12 2.7S6 9.5 6 14a6 6 0 0 0 12 0c0-4.5-6-11.3-6-11.3Z"/></svg></span>
+          </div>
+          <div class="metric-value">5.7<small>%</small></div>
+          <span class="trend bad"><svg class="icon" viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg>עלייה של 0.1</span><span class="trend-note">לעומת חודש שעבר</span>
+        </article>
+        <article class="card metric">
+          <div class="metric-top">
+            <span class="metric-name">גלוקוז</span>
+            <span class="metric-icon"><svg class="icon" viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg></span>
+          </div>
+          <div class="metric-value">115<small>mg/dL</small></div>
+          <span class="trend good"><svg class="icon" viewBox="0 0 24 24"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>ירידה של 7</span><span class="trend-note">לעומת חודש שעבר</span>
+        </article>
+        <article class="card metric">
+          <div class="metric-top">
+            <span class="metric-name">חום גוף</span>
+            <span class="metric-icon"><svg class="icon" viewBox="0 0 24 24"><path d="M14 14.8V4a2 2 0 0 0-4 0v10.8a4 4 0 1 0 4 0Z"/></svg></span>
+          </div>
+          <div class="metric-value">37.5<small>°C</small></div>
+          <span class="trend bad"><svg class="icon" viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg>עלייה של 0.7</span><span class="trend-note">לעומת חודש שעבר</span>
+        </article>
+        <article class="card metric">
+          <div class="metric-top">
+            <span class="metric-name">ריווי חמצן</span>
+            <span class="metric-icon"><svg class="icon" viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8Z"/></svg></span>
+          </div>
+          <div class="metric-value">97<small>%</small></div>
+          <span class="trend good"><svg class="icon" viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg>עלייה של 1</span><span class="trend-note">לעומת חודש שעבר</span>
+        </article>
+      </section>
+
+      <!-- Charts -->
+      <section class="charts">
+        <article class="card chart-card">
+          <h2 class="card-title">שינוי ב-HbA1c</h2>
+          <p class="card-sub">12 החודשים האחרונים (%)</p>
+          <div class="chart-wrap"><canvas id="hba1cChart" role="img" aria-label="גרף קווי של ערכי HbA1c ב-12 החודשים האחרונים"></canvas></div>
+        </article>
+        <article class="card chart-card">
+          <h2 class="card-title">מספר ביקורים בחודש</h2>
+          <p class="card-sub">12 החודשים האחרונים</p>
+          <div class="chart-wrap"><canvas id="visitsChart" role="img" aria-label="גרף עמודות של מספר הביקורים בכל חודש"></canvas></div>
+        </article>
+      </section>
+
+      <!-- Table -->
+      <section class="card table-card">
+        <div class="card-head">
+          <h2 class="card-title">10 הביקורים האחרונים</h2>
+          <p class="card-sub" style="margin-bottom:0">ביקורים אחרונים אצל רופאים</p>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">תאריך</th>
+                <th scope="col">מרפאה</th>
+                <th scope="col">שם הרופא</th>
+                <th scope="col">אבחנה</th>
+                <th scope="col">תרופה</th>
+                <th scope="col">טיפול</th>
+              </tr>
+            </thead>
+            <tbody id="visitsBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const LOCALE = 'he-IL';
+    document.getElementById('today').textContent =
+      new Date().toLocaleDateString(LOCALE, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+    // ---- Last 12 months labels ----
+    const now = new Date();
+    const months = Array.from({ length: 12 }, (_, i) => new Date(now.getFullYear(), now.getMonth() - 11 + i, 1));
+    const monthLabels = months.map(d => d.toLocaleDateString(LOCALE, { month: 'short' }));
+
+    const hba1c = [6.3, 6.2, 6.2, 6.0, 5.9, 5.9, 5.8, 5.7, 5.6, 5.6, 5.6, 5.7];
+    const visits = [2, 1, 3, 2, 1, 4, 2, 1, 2, 3, 1, 2];
+
+    // ---- Chart defaults ----
+    const BLUE = '#2563eb';
+    Chart.defaults.font.family = getComputedStyle(document.body).fontFamily;
+    Chart.defaults.color = '#64748b';
+    Chart.defaults.plugins.legend.display = false; // single series: the title names it
+    Object.assign(Chart.defaults.plugins.tooltip, {
+      rtl: true, textDirection: 'rtl', backgroundColor: '#0f172a',
+      padding: 10, cornerRadius: 8, displayColors: false
+    });
+    const grid = { color: '#eef2f7', drawTicks: false };
+    const noGrid = { display: false };
+
+    // RTL: time flows right-to-left, so reverse the x-axis
+    new Chart(document.getElementById('hba1cChart'), {
+      type: 'line',
+      data: {
+        labels: monthLabels,
+        datasets: [{
+          data: hba1c,
+          borderColor: BLUE,
+          borderWidth: 2,
+          backgroundColor: ctx => {
+            const { chart } = ctx;
+            if (!chart.chartArea) return 'rgba(37,99,235,.1)';
+            const g = chart.ctx.createLinearGradient(0, chart.chartArea.top, 0, chart.chartArea.bottom);
+            g.addColorStop(0, 'rgba(37,99,235,.18)');
+            g.addColorStop(1, 'rgba(37,99,235,0)');
+            return g;
+          },
+          fill: true,
+          tension: .35,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          pointBackgroundColor: '#fff',
+          pointBorderColor: BLUE,
+          pointBorderWidth: 2
+        }]
+      },
+      options: {
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: { tooltip: { callbacks: { label: c => `HbA1c: ${c.parsed.y.toFixed(1)}%` } } },
+        scales: {
+          x: { reverse: true, grid: noGrid, border: { display: false }, ticks: { maxRotation: 0, autoSkip: true, autoSkipPadding: 6 } },
+          y: { position: 'right', min: 5, max: 7, grid, border: { display: false },
+               ticks: { padding: 8, stepSize: .5, callback: v => v.toFixed(1) + '%' } }
+        }
+      }
+    });
+
+    new Chart(document.getElementById('visitsChart'), {
+      type: 'bar',
+      data: {
+        labels: monthLabels,
+        datasets: [{
+          data: visits,
+          backgroundColor: BLUE,
+          hoverBackgroundColor: '#1d4ed8',
+          borderRadius: { topLeft: 4, topRight: 4 },
+          borderSkipped: 'bottom',
+          maxBarThickness: 28
+        }]
+      },
+      options: {
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: { tooltip: { callbacks: { label: c => `${c.parsed.y} ביקורים` } } },
+        scales: {
+          x: { reverse: true, grid: noGrid, border: { display: false }, ticks: { maxRotation: 0, autoSkip: true, autoSkipPadding: 6 } },
+          y: { position: 'right', beginAtZero: true, grid, border: { display: false },
+               ticks: { padding: 8, stepSize: 1, precision: 0 } }
+        }
+      }
+    });
+
+    // ---- Recent visits table ----
+    const CLINIC = {
+      hospital: 'בית חולים',
+      phone: 'טלפוני',
+      office: 'מרפאה'
+    };
+    const daysAgo = n => new Date(now.getFullYear(), now.getMonth(), now.getDate() - n);
+    const recentVisits = [
+      { date: daysAgo(3),   clinic: 'office',   doctor: 'ד"ר מיכל לוי',      diag: 'מעקב טרום-סוכרת',      med: 'מטפורמין 500 מ"ג',   treat: 'התאמת תזונה ופעילות גופנית' },
+      { date: daysAgo(9),   clinic: 'phone',    doctor: 'ד"ר אורי ברק',      diag: 'חום ושיעול',            med: 'אקמול 500 מ"ג',      treat: 'מנוחה ושתייה מרובה' },
+      { date: daysAgo(21),  clinic: 'hospital', doctor: 'ד"ר נועה שפירא',    diag: 'דלקת ריאות קלה',        med: 'אמוקסיצילין 875 מ"ג', treat: 'אנטיביוטיקה ל-7 ימים' },
+      { date: daysAgo(34),  clinic: 'office',   doctor: 'ד"ר מיכל לוי',      diag: 'בדיקות דם תקופתיות',    med: 'מטפורמין 500 מ"ג',   treat: 'המשך טיפול קיים' },
+      { date: daysAgo(48),  clinic: 'phone',    doctor: 'ד"ר יוסי אברהם',    diag: 'כאבי ראש',              med: 'נורופן 400 מ"ג',     treat: 'מעקב לחץ דם' },
+      { date: daysAgo(62),  clinic: 'office',   doctor: 'ד"ר רונית גולן',    diag: 'יתר לחץ דם קל',         med: 'אמלודיפין 5 מ"ג',    treat: 'מדידות לחץ דם יומיות' },
+      { date: daysAgo(77),  clinic: 'hospital', doctor: 'ד"ר דוד מזרחי',     diag: 'בדיקת מאמץ',            med: '—',                   treat: 'ללא ממצאים חריגים' },
+      { date: daysAgo(95),  clinic: 'office',   doctor: 'ד"ר מיכל לוי',      diag: 'טרום-סוכרת',            med: 'מטפורמין 500 מ"ג',   treat: 'התחלת טיפול תרופתי' },
+      { date: daysAgo(118), clinic: 'phone',    doctor: 'ד"ר אורי ברק',      diag: 'חידוש מרשמים',          med: 'ויטמין D 1000 יב"ל',  treat: 'חידוש מרשם ל-3 חודשים' },
+      { date: daysAgo(140), clinic: 'hospital', doctor: 'ד"ר נועה שפירא',    diag: 'זיהום בדרכי השתן',      med: 'מונורל 3 גרם',       treat: 'מנה חד-פעמית ותרבית שתן' }
+    ];
+
+    const tbody = document.getElementById('visitsBody');
+    const fmtDate = d => d.toLocaleDateString(LOCALE, { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const esc = s => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+    function renderTable(filter = '') {
+      const q = filter.trim().toLowerCase();
+      const rows = recentVisits.filter(v =>
+        !q || [fmtDate(v.date), CLINIC[v.clinic], v.doctor, v.diag, v.med, v.treat].join(' ').toLowerCase().includes(q)
+      );
+      tbody.innerHTML = rows.length
+        ? rows.map(v => `
+          <tr>
+            <td class="date">${fmtDate(v.date)}</td>
+            <td><span class="clinic ${v.clinic}">${CLINIC[v.clinic]}</span></td>
+            <td>${esc(v.doctor)}</td>
+            <td>${esc(v.diag)}</td>
+            <td>${esc(v.med)}</td>
+            <td>${esc(v.treat)}</td>
+          </tr>`).join('')
+        : `<tr><td colspan="6" class="no-results">לא נמצאו ביקורים תואמים</td></tr>`;
+    }
+    renderTable();
+    document.getElementById('search').addEventListener('input', e => renderTable(e.target.value));
+  </script>
+</body>
+</html>
