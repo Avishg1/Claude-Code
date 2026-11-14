@@ -3,10 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>לוח בקרה עסקי | נובה אנליטיקס</title>
+  <title>לוח בקרה עסקי | אבישי פתרונות AI</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    // Apply the saved theme before the page paints, so dark mode never flashes light on load.
+    (() => {
+      let theme = null;
+      try { theme = localStorage.getItem('dashboard-theme'); } catch { /* storage blocked */ }
+      if (theme !== 'light' && theme !== 'dark') {
+        theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      }
+      document.documentElement.dataset.theme = theme;
+    })();
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <style>
     :root {
@@ -28,13 +39,81 @@
       --shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 12px rgba(15, 23, 42, 0.06);
       --radius: 12px;
       --sidebar-w: 248px;
+
+      /* Surfaces and accents that change between light and dark */
+      --app-bg: #ffffff;
+      --header-bg: rgba(255, 255, 255, 0.92);
+      --raised: #ffffff;             /* buttons, popovers */
+      --row-border: #f1f5f9;
+      --row-hover: #f8fafc;
+      --row-selected-hover: #dde9f9;
+      --unread-bg: #f5f9ff;
+      --border-strong: #cbd5e1;
+      --hover-wash: rgba(15, 23, 42, 0.04);
+      --accent-text: #2a78d6;        /* blue used as text (links, order ids, icons) */
+      --pulse-border: #bcd4f3;
+      --popover-shadow: 0 12px 32px rgba(15, 23, 42, 0.14), 0 2px 6px rgba(15, 23, 42, 0.06);
+      --segment-shadow: 0 1px 2px rgba(15, 23, 42, 0.12);
+      --amber: #b45309;
+      --amber-bg: #fef3c7;
+      --status-done: #15803d;       --status-done-bg: #dcfce7;
+      --status-pending: #a16207;    --status-pending-bg: #fef9c3;
+      --status-processing: #c2410c; --status-processing-bg: #ffedd5;
+      color-scheme: light;
     }
+
+    /* Dark theme. The sidebar keeps its own (already dark) colors in both themes. */
+    :root[data-theme="dark"] {
+      --primary-soft: #172a48;
+      --surface: #131b2c;
+      --page-bg: #0f1726;
+      --border: #243046;
+      --text-primary: #e6eaf1;
+      --text-secondary: #b3bccb;
+      --text-muted: #8a95a8;
+      --up: #4ade80;
+      --up-bg: rgba(34, 197, 94, 0.14);
+      --down: #f87171;
+      --down-bg: rgba(239, 68, 68, 0.15);
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 4px 14px rgba(0, 0, 0, 0.4);
+
+      --app-bg: #0b1120;
+      --header-bg: rgba(11, 17, 32, 0.88);
+      --raised: #1a2337;
+      --row-border: #1d2739;
+      --row-hover: #172034;
+      --row-selected-hover: #1d3355;
+      --unread-bg: #15213a;
+      --border-strong: #3a4760;
+      --hover-wash: rgba(255, 255, 255, 0.05);
+      --accent-text: #6aa6ee;
+      --pulse-border: #2f5486;
+      --popover-shadow: 0 14px 36px rgba(0, 0, 0, 0.55), 0 2px 6px rgba(0, 0, 0, 0.35);
+      --segment-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+      --amber: #fbbf24;
+      --amber-bg: rgba(245, 158, 11, 0.15);
+      --status-done: #4ade80;       --status-done-bg: rgba(34, 197, 94, 0.14);
+      --status-pending: #facc15;    --status-pending-bg: rgba(234, 179, 8, 0.14);
+      --status-processing: #fb923c; --status-processing-bg: rgba(249, 115, 22, 0.15);
+      color-scheme: dark;
+    }
+    :root[data-theme="dark"] .sidebar { border-left: 1px solid #1e293b; }
+    :root[data-theme="dark"] .bulk-bar { border: 1px solid #2a3650; }
+
+    /* Smooth theme switch for browsers without View Transitions (see the theme script) */
+    :root.theme-fading *,
+    :root.theme-fading *::before,
+    :root.theme-fading *::after {
+      transition: background-color 0.35s ease, border-color 0.35s ease, color 0.35s ease, box-shadow 0.35s ease, fill 0.35s ease !important;
+    }
+    ::view-transition-old(root),
+    ::view-transition-new(root) { animation-duration: 0.4s; animation-timing-function: ease; }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       font-family: 'Heebo', system-ui, sans-serif;
-      background: var(--surface);
+      background: var(--app-bg);
       color: var(--text-primary);
       font-size: 15px;
       line-height: 1.5;
@@ -104,7 +183,7 @@
     .main {
       margin-right: var(--sidebar-w);
       min-height: 100vh;
-      background: var(--surface);
+      background: var(--app-bg);
     }
 
     .header {
@@ -116,7 +195,7 @@
       justify-content: space-between;
       gap: 16px;
       padding: 16px 32px;
-      background: rgba(255, 255, 255, 0.92);
+      background: var(--header-bg);
       backdrop-filter: blur(8px);
       border-bottom: 1px solid var(--border);
     }
@@ -148,7 +227,7 @@
       outline: none;
       border-color: var(--primary);
       box-shadow: 0 0 0 3px var(--primary-soft);
-      background: #fff;
+      background: var(--surface);
     }
 
     .header-actions { display: flex; align-items: center; gap: 16px; }
@@ -158,7 +237,7 @@
       width: 40px; height: 40px;
       border: 1px solid var(--border);
       border-radius: 10px;
-      background: #fff;
+      background: var(--raised);
       color: var(--text-secondary);
       display: grid; place-items: center;
       cursor: pointer;
@@ -178,7 +257,7 @@
       font-weight: 700;
       line-height: 1;
       border-radius: 999px;
-      box-shadow: 0 0 0 2px #fff;
+      box-shadow: 0 0 0 2px var(--raised);
     }
     .badge[hidden] { display: none; }
 
@@ -200,17 +279,17 @@
 
     /* Notifications dropdown */
     .notif { position: relative; }
-    .icon-btn[aria-expanded="true"] { background: var(--page-bg); border-color: #cbd5e1; }
+    .icon-btn[aria-expanded="true"] { background: var(--page-bg); border-color: var(--border-strong); }
     .notif-panel {
       position: absolute;
       top: calc(100% + 10px);
       left: 0;
       width: 340px;
       max-width: calc(100vw - 32px);
-      background: #fff;
+      background: var(--raised);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      box-shadow: 0 12px 32px rgba(15, 23, 42, 0.14), 0 2px 6px rgba(15, 23, 42, 0.06);
+      box-shadow: var(--popover-shadow);
       overflow: hidden;
       z-index: 40;
       transform-origin: top left;
@@ -231,10 +310,10 @@
       display: flex;
       gap: 12px;
       padding: 14px 16px;
-      border-bottom: 1px solid #f1f5f9;
+      border-bottom: 1px solid var(--row-border);
     }
     .notif-item:last-child { border-bottom: none; }
-    .notif-item.unread { background: #f5f9ff; }
+    .notif-item.unread { background: var(--unread-bg); }
     .notif-icon {
       width: 34px; height: 34px;
       flex-shrink: 0;
@@ -242,8 +321,8 @@
       display: grid; place-items: center;
     }
     .notif-icon svg { width: 17px; height: 17px; }
-    .notif-icon.blue  { background: var(--primary-soft); color: var(--primary); }
-    .notif-icon.amber { background: #fef3c7; color: #b45309; }
+    .notif-icon.blue  { background: var(--primary-soft); color: var(--accent-text); }
+    .notif-icon.amber { background: var(--amber-bg); color: var(--amber); }
     .notif-icon.green { background: var(--up-bg); color: var(--up); }
     .notif-body { flex: 1; min-width: 0; }
     .notif-text { font-size: 13.5px; color: var(--text-primary); line-height: 1.45; }
@@ -257,12 +336,23 @@
     }
     .notif-item:not(.unread) .notif-dot { visibility: hidden; }
 
+    /* Theme toggle: moon in light mode, sun in dark mode */
+    .theme-toggle svg {
+      grid-area: 1 / 1;
+      transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.25s;
+    }
+    .theme-toggle .icon-sun { opacity: 0; transform: rotate(-90deg) scale(0.6); }
+    :root[data-theme="dark"] .theme-toggle .icon-sun { opacity: 1; transform: none; }
+    :root[data-theme="dark"] .theme-toggle .icon-moon { opacity: 0; transform: rotate(90deg) scale(0.6); }
+    .theme-toggle:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+    @media (prefers-reduced-motion: reduce) { .theme-toggle svg { transition: none; } }
+
     .user { display: flex; align-items: center; gap: 10px; }
     .avatar {
       width: 40px; height: 40px;
       border-radius: 50%;
       background: var(--primary-soft);
-      color: var(--primary);
+      color: var(--accent-text);
       display: grid; place-items: center;
       font-weight: 700;
     }
@@ -294,7 +384,7 @@
     .metric.pulse .metric-value { animation: value-pulse 1.4s ease-in-out; }
     @keyframes metric-pulse {
       0%, 100% { box-shadow: var(--shadow); border-color: var(--border); }
-      40% { box-shadow: 0 0 0 3px rgba(42, 120, 214, 0.10), var(--shadow); border-color: #bcd4f3; }
+      40% { box-shadow: 0 0 0 3px rgba(42, 120, 214, 0.10), var(--shadow); border-color: var(--pulse-border); }
     }
     @keyframes value-pulse {
       0%, 100% { opacity: 1; }
@@ -324,7 +414,7 @@
       width: 36px; height: 36px;
       border-radius: 10px;
       background: var(--primary-soft);
-      color: var(--primary);
+      color: var(--accent-text);
       display: grid; place-items: center;
     }
     .metric-icon svg { width: 18px; height: 18px; }
@@ -412,12 +502,12 @@
       white-space: nowrap;
       transition: background 0.15s, color 0.15s, box-shadow 0.15s;
     }
-    .range-options label:hover span { background: rgba(15, 23, 42, 0.04); }
+    .range-options label:hover span { background: var(--hover-wash); }
     .range-options input:checked + span {
       background: var(--surface);
       color: var(--text-primary);
       font-weight: 600;
-      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.12);
+      box-shadow: var(--segment-shadow);
     }
     .range-options input:focus-visible + span {
       outline: 2px solid var(--primary);
@@ -438,10 +528,10 @@
       background: var(--page-bg);
       border-bottom: 1px solid var(--border);
     }
-    td { border-bottom: 1px solid #f1f5f9; font-size: 14px; }
+    td { border-bottom: 1px solid var(--row-border); font-size: 14px; }
     tbody tr:last-child td { border-bottom: none; }
-    tbody tr:hover { background: #f8fafc; }
-    .order-id { font-weight: 600; color: var(--primary); }
+    tbody tr:hover { background: var(--row-hover); }
+    .order-id { font-weight: 600; color: var(--accent-text); }
     .amount { font-weight: 600; font-variant-numeric: tabular-nums; }
 
     .status {
@@ -459,14 +549,14 @@
       border-radius: 50%;
       background: currentColor;
     }
-    .status.completed  { color: #15803d; background: #dcfce7; }
-    .status.pending    { color: #a16207; background: #fef9c3; }
-    .status.processing { color: #c2410c; background: #ffedd5; }
+    .status.completed  { color: var(--status-done); background: var(--status-done-bg); }
+    .status.pending    { color: var(--status-pending); background: var(--status-pending-bg); }
+    .status.processing { color: var(--status-processing); background: var(--status-processing-bg); }
 
     .link-btn {
       font: inherit;
       font-size: 13px;
-      color: var(--primary);
+      color: var(--accent-text);
       background: none;
       border: none;
       cursor: pointer;
@@ -584,7 +674,7 @@
       vertical-align: middle;
     }
     tbody tr.selected { background: var(--primary-soft); }
-    tbody tr.selected:hover { background: #dde9f9; }
+    tbody tr.selected:hover { background: var(--row-selected-hover); }
 
     /* Sortable headers */
     th[aria-sort] { padding: 0; }
@@ -646,7 +736,7 @@
       font-size: 13px;
       font-weight: 500;
       color: var(--text-primary);
-      background: #fff;
+      background: var(--raised);
       border: 1px solid var(--border);
       border-radius: 8px;
       cursor: pointer;
@@ -687,7 +777,7 @@
   <aside class="sidebar" aria-label="תפריט ראשי">
     <div class="brand">
       <div class="brand-logo" aria-hidden="true">נ</div>
-      <div class="brand-name">נובה אנליטיקס</div>
+      <div class="brand-name">אבישי פתרונות AI</div>
     </div>
 
     <nav>
@@ -725,7 +815,7 @@
       </ul>
     </nav>
 
-    <div class="sidebar-footer">© 2026 נובה אנליטיקס</div>
+    <div class="sidebar-footer">© 2026 אבישי פתרונות AI</div>
   </aside>
 
   <!-- Main -->
@@ -787,6 +877,11 @@
             </ul>
           </div>
         </div>
+        <button class="icon-btn theme-toggle" type="button" id="themeToggle" aria-pressed="false" aria-label="מצב כהה" title="מעבר למצב כהה">
+          <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/></svg>
+          <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+        </button>
+
         <div class="user">
           <div class="avatar" aria-label="תמונת משתמש">א</div>
           <div class="user-meta">
@@ -1189,25 +1284,42 @@
     };
 
     // ---------- Chart defaults ----------
-    const PRIMARY = '#2a78d6';
+    // Chart colors per theme. The dark series blue is its own step, checked for contrast on the dark card.
+    const CHART_THEMES = {
+      light: {
+        series: '#2a78d6', seriesHover: '#1f63b5', fill: '42, 120, 214', fillAlpha: 0.18,
+        text: '#6b7280', grid: '#eef0f3', crosshair: '#94a3b8', pointRing: '#ffffff',
+        tooltipBg: '#0f172a', tooltipTitle: '#cbd5e1', tooltipBody: '#ffffff', tooltipBorder: 'rgba(0, 0, 0, 0)',
+      },
+      dark: {
+        series: '#4f92e0', seriesHover: '#7aaeea', fill: '79, 146, 224', fillAlpha: 0.22,
+        text: '#8a95a8', grid: '#212b3d', crosshair: '#5b6880', pointRing: '#131b2c',
+        tooltipBg: '#27324a', tooltipTitle: '#b3bccb', tooltipBody: '#ffffff', tooltipBorder: '#3a4760',
+      },
+    };
+    let chartColors = CHART_THEMES[document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light'];
+
     Chart.defaults.font.family = "'Heebo', system-ui, sans-serif";
     Chart.defaults.font.size = 12;
-    Chart.defaults.color = '#6b7280';
+    Chart.defaults.color = chartColors.text;
 
     const tooltipBase = {
       rtl: true,
       textDirection: 'rtl',
-      backgroundColor: '#0f172a',
+      backgroundColor: chartColors.tooltipBg,
+      borderColor: chartColors.tooltipBorder,
+      borderWidth: 1,
       padding: 10,
       cornerRadius: 8,
       titleFont: { weight: '500' },
-      titleColor: '#cbd5e1',
+      titleColor: chartColors.tooltipTitle,
+      bodyColor: chartColors.tooltipBody,
       bodyFont: { size: 14, weight: '700' },
       displayColors: false,
       caretPadding: 8,
     };
 
-    const gridColor = '#eef0f3';
+    const gridColor = chartColors.grid;
     const UPDATE_ANIMATION = reduceMotion ? false : { duration: 650, easing: 'easeInOutQuart' };
 
     // Vertical hairline at the hovered point, so it's clear which date the tooltip refers to.
@@ -1224,7 +1336,7 @@
         c.moveTo(x, top);
         c.lineTo(x, bottom);
         c.lineWidth = 1;
-        c.strokeStyle = '#94a3b8';
+        c.strokeStyle = chartColors.crosshair;
         c.setLineDash([3, 3]);
         c.stroke();
         c.restore();
@@ -1278,24 +1390,25 @@
         datasets: [{
           label: 'הכנסות',
           data: current.buckets.map((b) => b.value),
-          borderColor: PRIMARY,
+          // Colors are functions so they always follow the current theme (Chart.js caches plain values).
+          borderColor: () => chartColors.series,
           borderWidth: 2,
           cubicInterpolationMode: 'monotone', // smooth, but never overshoots the real values
           fill: true,
           backgroundColor: (ctx) => {
             const { chart } = ctx;
             const { ctx: c, chartArea } = chart;
-            if (!chartArea) return 'rgba(42,120,214,0.08)';
+            if (!chartArea) return `rgba(${chartColors.fill}, 0.08)`;
             const g = c.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-            g.addColorStop(0, 'rgba(42,120,214,0.18)');
-            g.addColorStop(1, 'rgba(42,120,214,0)');
+            g.addColorStop(0, `rgba(${chartColors.fill}, ${chartColors.fillAlpha})`);
+            g.addColorStop(1, `rgba(${chartColors.fill}, 0)`);
             return g;
           },
           pointRadius: 0,
           pointHitRadius: 12,
           pointHoverRadius: 5,
-          pointHoverBackgroundColor: PRIMARY,
-          pointHoverBorderColor: '#fff',
+          pointHoverBackgroundColor: () => chartColors.series,
+          pointHoverBorderColor: () => chartColors.pointRing,
           pointHoverBorderWidth: 2,
         }],
       },
@@ -1340,8 +1453,8 @@
         datasets: [{
           label: 'הכנסות',
           data: categoryValues,
-          backgroundColor: PRIMARY,
-          hoverBackgroundColor: '#1f63b5',
+          backgroundColor: () => chartColors.series,
+          hoverBackgroundColor: () => chartColors.seriesHover,
           borderRadius: { topLeft: 4, topRight: 4 },
           borderSkipped: 'bottom',
           maxBarThickness: 42,
@@ -1426,6 +1539,55 @@
 
     renderRangeText();
     if (!reduceMotion) drawIn(revenueChart, 1400);
+
+    // ---------- Theme (light / dark) ----------
+    const themeToggle = document.getElementById('themeToggle');
+
+    const applyChartTheme = (theme) => {
+      chartColors = CHART_THEMES[theme];
+      Chart.defaults.color = chartColors.text;
+      for (const chart of [revenueChart, categoryChart]) {
+        // Series colors read chartColors directly; tooltip, grid and ticks are set here.
+        Object.assign(chart.options.plugins.tooltip, {
+          backgroundColor: chartColors.tooltipBg,
+          borderColor: chartColors.tooltipBorder,
+          titleColor: chartColors.tooltipTitle,
+          bodyColor: chartColors.tooltipBody,
+        });
+        chart.options.scales.y.grid.color = chartColors.grid;
+        for (const axis of ['x', 'y']) chart.options.scales[axis].ticks.color = chartColors.text;
+        chart.update('none'); // recolor in place; the page-level fade animates the change
+      }
+    };
+
+    const syncToggle = (theme) => {
+      const dark = theme === 'dark';
+      themeToggle.setAttribute('aria-pressed', String(dark));
+      themeToggle.title = dark ? 'מעבר למצב בהיר' : 'מעבר למצב כהה';
+    };
+
+    const setTheme = (theme) => {
+      const apply = () => {
+        document.documentElement.dataset.theme = theme;
+        applyChartTheme(theme);
+        syncToggle(theme);
+      };
+      try { localStorage.setItem('dashboard-theme', theme); } catch { /* storage blocked: still switch for this visit */ }
+
+      if (reduceMotion) return apply();
+      // Cross-fade the whole page, charts included, where the browser supports it.
+      if (document.startViewTransition) return document.startViewTransition(apply);
+      // Fallback: let the CSS colors transition for a moment.
+      const root = document.documentElement;
+      root.classList.add('theme-fading');
+      apply();
+      setTimeout(() => root.classList.remove('theme-fading'), 400);
+    };
+
+    syncToggle(document.documentElement.dataset.theme);
+    themeToggle.addEventListener('click', () => {
+      setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
+    });
 
     // ---------- Recent orders ----------
     const STATUS = {
