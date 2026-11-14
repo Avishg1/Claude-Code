@@ -366,6 +366,127 @@
       font-weight: 600;
     }
 
+    /* Toolbar: search + bulk actions */
+    .table-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      padding: 16px 20px;
+    }
+    .table-search { width: min(320px, 100%); }
+    .table-search input { padding-block: 8px; }
+
+    .bulk-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 6px 8px 6px 6px;
+      padding-inline-start: 14px;
+      border-radius: 10px;
+      background: var(--primary-soft);
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--primary);
+    }
+    .bulk-bar[hidden] { display: none; }
+    .bulk-btn {
+      font: inherit;
+      font-size: 13px;
+      padding: 6px 12px;
+      border-radius: 7px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      background: var(--primary);
+      color: #fff;
+    }
+    .bulk-btn:hover { background: #1f63b5; }
+    .bulk-btn.ghost { background: transparent; color: var(--primary); }
+    .bulk-btn.ghost:hover { background: rgba(42, 120, 214, 0.1); }
+
+    /* Checkboxes */
+    th.check, td.check { width: 44px; padding-inline-end: 0; }
+    .check input {
+      width: 16px; height: 16px;
+      accent-color: var(--primary);
+      cursor: pointer;
+      vertical-align: middle;
+    }
+    tbody tr.selected { background: var(--primary-soft); }
+    tbody tr.selected:hover { background: #dde9f9; }
+
+    /* Sortable headers */
+    th[aria-sort] { padding: 0; }
+    .sort-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      width: 100%;
+      padding: 13px 20px;
+      font: inherit;
+      color: inherit;
+      background: none;
+      border: none;
+      cursor: pointer;
+      text-align: right;
+    }
+    .sort-btn:hover { color: var(--text-primary); }
+    .sort-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
+    .sort-icon {
+      width: 14px; height: 14px;
+      flex-shrink: 0;
+      opacity: 0;
+      transition: opacity 0.15s, transform 0.15s;
+    }
+    .sort-btn:hover .sort-icon { opacity: 0.35; }
+    th[aria-sort="ascending"] .sort-btn,
+    th[aria-sort="descending"] .sort-btn { color: var(--text-primary); }
+    th[aria-sort="ascending"] .sort-icon,
+    th[aria-sort="descending"] .sort-icon { opacity: 1; color: var(--primary); }
+    th[aria-sort="descending"] .sort-icon { transform: rotate(180deg); }
+
+    td.empty {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-muted);
+    }
+
+    /* Pagination */
+    .pagination {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      padding: 14px 20px;
+      border-top: 1px solid var(--border);
+      font-size: 13.5px;
+      color: var(--text-secondary);
+    }
+    .pagination strong { color: var(--text-primary); font-weight: 600; }
+    .pager { display: flex; align-items: center; gap: 8px; }
+    .page-info { color: var(--text-muted); padding-inline: 4px; }
+    .page-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 7px 12px;
+      font: inherit;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-primary);
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .page-btn svg { width: 16px; height: 16px; }
+    .page-btn:hover:not(:disabled) { background: var(--page-bg); }
+    .page-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .page-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
+
     /* ---------- Responsive ---------- */
     @media (max-width: 1200px) {
       .metrics { grid-template-columns: repeat(2, 1fr); }
@@ -564,23 +685,55 @@
       <!-- Recent orders -->
       <section class="card table-card" aria-label="הזמנות אחרונות">
         <div class="card-head">
-          <h2 class="card-title">10 ההזמנות האחרונות</h2>
+          <h2 class="card-title">הזמנות אחרונות</h2>
           <button class="link-btn" type="button">לכל ההזמנות ←</button>
         </div>
+
+        <div class="table-toolbar">
+          <label class="search table-search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <input type="search" id="ordersSearch" placeholder="חיפוש לפי מס׳ הזמנה, לקוח, סטטוס..." aria-label="חיפוש בטבלת ההזמנות" aria-controls="ordersBody" autocomplete="off">
+          </label>
+
+          <div class="bulk-bar" id="bulkBar" role="region" aria-label="פעולות על הזמנות שנבחרו" hidden>
+            <span id="bulkCount"></span>
+            <button class="bulk-btn" type="button" id="bulkComplete">סמן כהושלמו</button>
+            <button class="bulk-btn ghost" type="button" id="bulkClear">ביטול בחירה</button>
+          </div>
+        </div>
+
         <div class="table-scroll">
           <table>
             <thead>
               <tr>
-                <th scope="col">מס׳ הזמנה</th>
-                <th scope="col">שם הלקוח</th>
-                <th scope="col">תאריך</th>
-                <th scope="col">סכום</th>
-                <th scope="col">סטטוס</th>
+                <th scope="col" class="check">
+                  <input type="checkbox" id="selectPage" aria-label="בחירת כל ההזמנות בעמוד">
+                </th>
+                <th scope="col" data-sort="id" aria-sort="none"><button type="button" class="sort-btn">מס׳ הזמנה<svg class="sort-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg></button></th>
+                <th scope="col" data-sort="name" aria-sort="none"><button type="button" class="sort-btn">שם הלקוח<svg class="sort-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg></button></th>
+                <th scope="col" data-sort="date" aria-sort="none"><button type="button" class="sort-btn">תאריך<svg class="sort-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg></button></th>
+                <th scope="col" data-sort="amount" aria-sort="none"><button type="button" class="sort-btn">סכום<svg class="sort-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg></button></th>
+                <th scope="col" data-sort="status" aria-sort="none"><button type="button" class="sort-btn">סטטוס<svg class="sort-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg></button></th>
               </tr>
             </thead>
             <tbody id="ordersBody"></tbody>
           </table>
         </div>
+
+        <nav class="pagination" aria-label="דפדוף בין עמודי ההזמנות">
+          <p id="pageSummary" aria-live="polite"></p>
+          <div class="pager">
+            <button type="button" class="page-btn" id="prevPage">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+              הקודם
+            </button>
+            <span class="page-info" id="pageInfo"></span>
+            <button type="button" class="page-btn" id="nextPage">
+              הבא
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+            </button>
+          </div>
+        </nav>
       </section>
     </main>
   </div>
@@ -945,30 +1098,172 @@
       processing: 'בטיפול',
     };
 
-    const daysAgo = (n, h) => { const d = new Date(now); d.setDate(d.getDate() - n); d.setHours(h, 0, 0, 0); return d; };
+    // 50 demo orders, newest first, generated deterministically.
+    const FIRST_NAMES = ['נועה', 'יוסי', 'מיכל', 'דניאל', 'שירה', 'אורי', 'תמר', 'איתי', 'רוני', 'הדר', 'עומר', 'יעל', 'אביב', 'ליאת', 'גיל', 'מאיה', 'עידו', 'שני', 'אלון', 'רותם'];
+    const LAST_NAMES = ['כהן', 'לוי', 'אברהם', 'מזרחי', 'פרץ', 'ביטון', 'שפירא', 'גולן', 'אלון', 'וקנין', 'פרידמן', 'דהן', 'אזולאי', 'חדד', 'קפלן', 'רוזן'];
+    const fmtOrderDate = fmt({ day: 'numeric', month: 'short', year: 'numeric' });
 
-    const orders = [
-      { id: '#10458', name: 'נועה כהן',     date: daysAgo(0, 14), amount: 249.90,  status: 'processing' },
-      { id: '#10457', name: 'יוסי לוי',      date: daysAgo(0, 11), amount: 89.50,   status: 'pending' },
-      { id: '#10456', name: 'מיכל אברהם',   date: daysAgo(1, 17), amount: 432.00,  status: 'completed' },
-      { id: '#10455', name: 'דניאל מזרחי',  date: daysAgo(1, 9),  amount: 156.75,  status: 'completed' },
-      { id: '#10454', name: 'שירה פרץ',     date: daysAgo(2, 15), amount: 74.20,   status: 'processing' },
-      { id: '#10453', name: 'אורי ביטון',   date: daysAgo(2, 10), amount: 1120.00, status: 'completed' },
-      { id: '#10452', name: 'תמר שפירא',    date: daysAgo(3, 16), amount: 63.40,   status: 'pending' },
-      { id: '#10451', name: 'איתי גולן',    date: daysAgo(3, 12), amount: 289.99,  status: 'completed' },
-      { id: '#10450', name: 'רוני אלון',    date: daysAgo(4, 13), amount: 118.30,  status: 'completed' },
-      { id: '#10449', name: 'הדר וקנין',    date: daysAgo(5, 18), amount: 205.60,  status: 'pending' },
-    ];
+    const orders = [];
+    {
+      const rand = seededRandom(10458);
+      const pick = (arr) => arr[Math.floor(rand() * arr.length)];
+      let t = now.getTime() - 3600e3;
+      for (let i = 0; i < 50; i++) {
+        const r = rand();
+        const status = i < 6 ? (r < 0.5 ? 'pending' : 'processing')
+          : i < 15 ? (r < 0.6 ? 'completed' : r < 0.8 ? 'processing' : 'pending')
+          : 'completed';
+        const date = new Date(t);
+        orders.push({
+          num: 10458 - i,
+          name: `${pick(FIRST_NAMES)} ${pick(LAST_NAMES)}`,
+          date,
+          dateText: fmtOrderDate.format(date),
+          amount: Math.round((40 + rand() ** 2 * 1100) * 100) / 100,
+          status,
+        });
+        t -= (3 + rand() * 13) * 3600e3; // the previous order came 3–16 hours earlier
+      }
+    }
 
-    document.getElementById('ordersBody').innerHTML = orders.map((o) => `
-      <tr>
-        <td class="order-id"><span class="ltr">${o.id}</span></td>
-        <td>${o.name}</td>
-        <td>${o.date.toLocaleDateString('he-IL', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
-        <td class="amount"><span class="ltr">${usd(o.amount, 2)}</span></td>
-        <td><span class="status ${o.status}">${STATUS[o.status]}</span></td>
-      </tr>
-    `).join('');
+    // ---------- Orders table: search, sort, pagination, selection ----------
+    const PAGE_SIZE = 10;
+    const STATUS_RANK = { pending: 0, processing: 1, completed: 2 };
+    const collator = new Intl.Collator('he');
+    const COMPARE = {
+      id: (a, b) => a.num - b.num,
+      name: (a, b) => collator.compare(a.name, b.name),
+      date: (a, b) => a.date - b.date,
+      amount: (a, b) => a.amount - b.amount,
+      status: (a, b) => STATUS_RANK[a.status] - STATUS_RANK[b.status],
+    };
+
+    const table = { query: '', sortKey: 'date', sortDir: 'desc', page: 1, selected: new Set(), pageRows: [] };
+
+    const ordersBody = document.getElementById('ordersBody');
+    const selectPage = document.getElementById('selectPage');
+    const bulkBar = document.getElementById('bulkBar');
+    const pageSummary = document.getElementById('pageSummary');
+    const prevBtn = document.getElementById('prevPage');
+    const nextBtn = document.getElementById('nextPage');
+
+    const escapeHtml = (s) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+    const matches = (o, q) =>
+      [`#${o.num}`, o.name, o.dateText, usd(o.amount, 2), String(o.amount), STATUS[o.status]]
+        .join(' ').toLowerCase().includes(q);
+
+    const visibleOrders = () => {
+      const q = table.query.trim().toLowerCase();
+      const rows = q ? orders.filter((o) => matches(o, q)) : orders.slice();
+      const dir = table.sortDir === 'asc' ? 1 : -1;
+      const cmp = COMPARE[table.sortKey];
+      return rows.sort((a, b) => cmp(a, b) * dir || b.date - a.date); // ties: newest first
+    };
+
+    // Header checkbox, highlighted rows and the bulk bar — updated without rebuilding rows,
+    // so keyboard focus stays on the checkbox the user just toggled.
+    const renderSelection = () => {
+      const ids = table.pageRows.map((o) => o.num);
+      const picked = ids.filter((id) => table.selected.has(id)).length;
+      selectPage.checked = ids.length > 0 && picked === ids.length;
+      selectPage.indeterminate = picked > 0 && picked < ids.length;
+      selectPage.disabled = ids.length === 0;
+
+      ordersBody.querySelectorAll('tr[data-id]').forEach((tr) => {
+        const on = table.selected.has(Number(tr.dataset.id));
+        tr.classList.toggle('selected', on);
+        tr.querySelector('.row-check').checked = on;
+      });
+
+      const n = table.selected.size;
+      bulkBar.hidden = n === 0;
+      document.getElementById('bulkCount').textContent = n === 1 ? 'נבחרה הזמנה אחת' : `נבחרו ${n} הזמנות`;
+    };
+
+    const renderTable = () => {
+      const rows = visibleOrders();
+      const pages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+      table.page = Math.min(table.page, pages);
+      const start = (table.page - 1) * PAGE_SIZE;
+      table.pageRows = rows.slice(start, start + PAGE_SIZE);
+
+      ordersBody.innerHTML = table.pageRows.length
+        ? table.pageRows.map((o) => `
+          <tr data-id="${o.num}">
+            <td class="check"><input type="checkbox" class="row-check" aria-label="בחירת הזמנה ${o.num}"></td>
+            <td class="order-id"><span class="ltr">#${o.num}</span></td>
+            <td>${o.name}</td>
+            <td>${o.dateText}</td>
+            <td class="amount"><span class="ltr">${usd(o.amount, 2)}</span></td>
+            <td><span class="status ${o.status}">${STATUS[o.status]}</span></td>
+          </tr>`).join('')
+        : `<tr><td colspan="6" class="empty">לא נמצאו הזמנות התואמות ל„${escapeHtml(table.query.trim())}”</td></tr>`;
+
+      document.querySelectorAll('th[data-sort]').forEach((th) => {
+        const active = th.dataset.sort === table.sortKey;
+        th.setAttribute('aria-sort', active ? (table.sortDir === 'asc' ? 'ascending' : 'descending') : 'none');
+      });
+
+      pageSummary.innerHTML = rows.length
+        ? `מציג <strong class="ltr">${start + 1}-${start + table.pageRows.length}</strong> מתוך <strong>${rows.length}</strong> תוצאות`
+        : 'לא נמצאו תוצאות';
+      document.getElementById('pageInfo').textContent = `עמוד ${table.page} מתוך ${pages}`;
+      prevBtn.disabled = table.page === 1;
+      nextBtn.disabled = table.page === pages;
+
+      renderSelection();
+    };
+
+    document.getElementById('ordersSearch').addEventListener('input', (e) => {
+      table.query = e.target.value;
+      table.page = 1;
+      renderTable();
+    });
+
+    document.querySelector('.table-card thead').addEventListener('click', (e) => {
+      const th = e.target.closest('th[data-sort]');
+      if (!th) return;
+      const key = th.dataset.sort;
+      if (table.sortKey === key) {
+        table.sortDir = table.sortDir === 'asc' ? 'desc' : 'asc';
+      } else {
+        table.sortKey = key;
+        table.sortDir = 'asc';
+      }
+      table.page = 1;
+      renderTable();
+    });
+
+    ordersBody.addEventListener('change', (e) => {
+      if (!e.target.classList.contains('row-check')) return;
+      const id = Number(e.target.closest('tr').dataset.id);
+      if (e.target.checked) table.selected.add(id); else table.selected.delete(id);
+      renderSelection();
+    });
+
+    selectPage.addEventListener('change', () => {
+      table.pageRows.forEach((o) => (selectPage.checked ? table.selected.add(o.num) : table.selected.delete(o.num)));
+      renderSelection();
+    });
+
+    prevBtn.addEventListener('click', () => { table.page--; renderTable(); });
+    nextBtn.addEventListener('click', () => { table.page++; renderTable(); });
+
+    document.getElementById('bulkComplete').addEventListener('click', () => {
+      orders.forEach((o) => { if (table.selected.has(o.num)) o.status = 'completed'; });
+      table.selected.clear();
+      renderTable();
+      selectPage.focus();
+    });
+
+    document.getElementById('bulkClear').addEventListener('click', () => {
+      table.selected.clear();
+      renderSelection();
+      selectPage.focus();
+    });
+
+    renderTable();
   </script>
 </body>
 </html>
