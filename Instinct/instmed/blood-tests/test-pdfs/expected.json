@@ -1,0 +1,239 @@
+{
+  "_note": "All fixtures are FICTIONAL demo documents. Expected values are exactly as printed in each PDF.",
+  "files": {
+    "alpha-2026-03-12-hebrew.pdf": {
+      "kind": "ok",
+      "date": "2026-03-12",
+      "lab": "מעבדת אלפא לבדיקות (בדיונית)",
+      "rows": [
+        {
+          "name": "המוגלובין (Hemoglobin)",
+          "value": "13.4",
+          "unit": "g/dL",
+          "range": "12.0-16.0"
+        },
+        {
+          "name": "תאי דם לבנים (WBC)",
+          "value": "7.2",
+          "unit": "10^3/µL",
+          "range": "4.0-10.5"
+        },
+        {
+          "name": "טסיות דם",
+          "value": "255",
+          "unit": "10^3/µL",
+          "range": "150-400"
+        },
+        {
+          "name": "גלוקוז",
+          "value": "96",
+          "unit": "mg/dL",
+          "range": "70-100"
+        },
+        {
+          "name": "כולסטרול כללי",
+          "value": "188",
+          "unit": "mg/dL",
+          "range": "< 200"
+        },
+        {
+          "name": "קריאטינין",
+          "value": "0.91",
+          "unit": "mg/dL",
+          "range": "0.6-1.2"
+        },
+        {
+          "name": "TSH",
+          "value": "2.4",
+          "unit": "mIU/L",
+          "range": "0.4-4.0"
+        },
+        {
+          "name": "ויטמין D",
+          "value": "27",
+          "unit": "ng/mL",
+          "range": "30-100"
+        }
+      ]
+    },
+    "alpha-2026-06-18-hebrew-missing-and-range-change.pdf": {
+      "kind": "ok",
+      "date": "2026-06-18",
+      "lab": "מעבדת אלפא לבדיקות (בדיונית)",
+      "rows": [
+        {
+          "name": "המוגלובין (Hemoglobin)",
+          "value": "12.6",
+          "unit": "g/dL",
+          "range": "11.5-15.5"
+        },
+        {
+          "name": "תאי דם לבנים (WBC)",
+          "value": "6.8",
+          "unit": "10^3/µL",
+          "range": "4.0-10.5"
+        },
+        {
+          "name": "טסיות דם",
+          "value": "241",
+          "unit": "10^3/µL",
+          "range": "150-400"
+        },
+        {
+          "name": "גלוקוז",
+          "value": "103",
+          "unit": "mg/dL",
+          "range": "70-100"
+        },
+        {
+          "name": "כולסטרול כללי",
+          "value": "194",
+          "unit": "mg/dL",
+          "range": "< 200"
+        },
+        {
+          "name": "קריאטינין",
+          "value": "0.95",
+          "unit": "mg/dL",
+          "range": ""
+        },
+        {
+          "name": "TSH",
+          "value": "4.6",
+          "unit": "mIU/L",
+          "range": "0.4-4.0"
+        },
+        {
+          "name": "ויטמין D",
+          "value": "",
+          "valueStatus": "missing",
+          "unit": "ng/mL",
+          "range": "30-100"
+        }
+      ]
+    },
+    "beta-2026-09-14-english.pdf": {
+      "kind": "ok",
+      "date": "2026-09-14",
+      "lab": "Beta Diagnostics Laboratory (fictional)",
+      "rows": [
+        {
+          "name": "Hemoglobin",
+          "value": "12.1",
+          "unit": "g/dL",
+          "range": "11.5 - 15.5"
+        },
+        {
+          "name": "WBC",
+          "value": "11.4",
+          "unit": "10^3/µL",
+          "range": "4.0 - 10.5"
+        },
+        {
+          "name": "Glucose",
+          "value": "5.8",
+          "unit": "mmol/L",
+          "range": "3.9 - 5.6"
+        },
+        {
+          "name": "Total Cholesterol",
+          "value": "4.9",
+          "unit": "mmol/L",
+          "range": "< 5.2"
+        },
+        {
+          "name": "TSH",
+          "value": "3.1",
+          "unit": "mIU/L",
+          "range": "0.5 - 4.5"
+        },
+        {
+          "name": "Ferritin",
+          "value": "14",
+          "unit": "ng/mL",
+          "range": "20 - 200"
+        },
+        {
+          "name": "Vitamin B12",
+          "value": "410",
+          "unit": "pg/mL",
+          "range": "200 - 900"
+        },
+        {
+          "name": "CRP",
+          "value": "",
+          "valueStatus": "unclear",
+          "unit": "mg/L",
+          "range": "< 5"
+        }
+      ]
+    },
+    "gamma-2026-11-02-mixed.pdf": {
+      "kind": "ok",
+      "date": "2026-11-02",
+      "lab": "מכון גמא לבדיקות (בדיוני)",
+      "rows": [
+        {
+          "name": "המוגלובין (Hemoglobin)",
+          "value": "12.8",
+          "unit": "g/dL",
+          "range": "12.0-15.5"
+        },
+        {
+          "name": "גלוקוז",
+          "value": "5.4",
+          "unit": "mmol/L",
+          "range": "3.9-5.6"
+        },
+        {
+          "name": "כולסטרול כללי",
+          "value": "4.6",
+          "unit": "mmol/L",
+          "range": "< 5.2"
+        },
+        {
+          "name": "TSH",
+          "value": "2.2",
+          "unit": "mIU/L",
+          "range": "0.4-4.0"
+        },
+        {
+          "name": "נתרן (Sodium)",
+          "value": "139",
+          "unit": "mEq/L",
+          "range": "135-145"
+        },
+        {
+          "name": "אשלגן (Potassium)",
+          "value": "5.3",
+          "unit": "mEq/L",
+          "range": "3.5-5.1"
+        },
+        {
+          "name": "חלבון בשתן",
+          "value": "",
+          "valueStatus": "unclear",
+          "unit": "",
+          "unitStatus": "missing",
+          "range": "שלילי"
+        }
+      ]
+    },
+    "scanned-no-text-layer.pdf": {
+      "kind": "error",
+      "code": "noText"
+    },
+    "bad-not-a-pdf.pdf": {
+      "kind": "error",
+      "code": "notPdf"
+    },
+    "bad-corrupt.pdf": {
+      "kind": "error",
+      "code": "corrupt"
+    },
+    "bad-password-protected.pdf": {
+      "kind": "error",
+      "code": "password"
+    }
+  }
+}

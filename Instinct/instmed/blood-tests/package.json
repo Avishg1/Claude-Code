@@ -1,0 +1,12 @@
+{
+  "name": "blood-tests-dashboard",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Local Hebrew RTL dashboard for displaying blood test results (fictional demo data + local PDF import). Display only.",
+  "scripts": {
+    "start": "node server.js",
+    "make-test-pdfs": "node tools/make-test-pdfs.mjs",
+    "check": "node tools/e2e-check.mjs"
+  },
+  "license": "UNLICENSED"
+}

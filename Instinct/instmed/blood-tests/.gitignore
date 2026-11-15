@@ -1,0 +1,10 @@
+# Real lab reports and anything derived from them must never be committed.
+real-pdfs/*
+!real-pdfs/README.txt
+private/
+*.real.pdf
+# Manual JSON exports of imported data
+imported-blood-tests-*.json
+*.imported.json
+
+node_modules/
