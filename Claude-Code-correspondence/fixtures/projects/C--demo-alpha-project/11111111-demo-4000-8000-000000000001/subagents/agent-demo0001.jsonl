@@ -1,0 +1,2 @@
+{"type":"user","uuid":"sa-1","parentUuid":null,"isSidechain":true,"timestamp":"2026-01-05T09:10:00.000Z","message":{"role":"user","content":"Subagent task (fictional): list files."}}
+{"type":"assistant","uuid":"sa-2","parentUuid":"sa-1","isSidechain":true,"timestamp":"2026-01-05T09:11:00.000Z","message":{"role":"assistant","content":[{"type":"text","text":"Found 3 fictional files."}]}}

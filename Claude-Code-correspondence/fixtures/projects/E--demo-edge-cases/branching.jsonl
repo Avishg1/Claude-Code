@@ -1,0 +1,5 @@
+{"type":"user","uuid":"b-1","parentUuid":null,"timestamp":"2026-01-05T09:30:00.000Z","message":{"role":"user","content":"Branch root question"}}
+{"type":"assistant","uuid":"b-2a","parentUuid":"b-1","timestamp":"2026-01-05T09:31:00.000Z","message":{"role":"assistant","content":"First answer (branch A)"}}
+{"type":"assistant","uuid":"b-2b","parentUuid":"b-1","timestamp":"2026-01-05T09:32:00.000Z","message":{"role":"assistant","content":"Regenerated answer (branch B)"}}
+{"type":"user","uuid":"b-3","parentUuid":"b-2b","timestamp":"2026-01-05T09:33:00.000Z","message":{"role":"user","content":"Follow-up on branch B"}}
+{"type":"user","uuid":"b-3","parentUuid":"b-2b","timestamp":"2026-01-05T09:33:00.000Z","message":{"role":"user","content":"Follow-up on branch B"}}

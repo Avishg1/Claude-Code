@@ -437,6 +437,22 @@
     .trend.up { color: var(--up); background: var(--up-bg); }
     .trend.down { color: var(--down); background: var(--down-bg); }
     .trend-note { font-size: 12.5px; color: var(--text-muted); margin-right: 6px; }
+    .trend.flat { color: var(--text-secondary); background: rgba(127, 127, 127, 0.12); }
+    .trend[hidden] { display: none; }
+
+    /* Shown when data.json can't be loaded */
+    .load-error {
+      margin-bottom: 20px;
+      padding: 14px 18px;
+      border-radius: 12px;
+      color: var(--down);
+      background: var(--down-bg);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    .load-error[hidden] { display: none; }
+    .load-error strong { display: block; margin-bottom: 2px; }
+    .load-error code { direction: ltr; unicode-bidi: isolate; font-family: ui-monospace, Consolas, monospace; }
 
     /* ---------- Charts ---------- */
     .charts {
@@ -895,66 +911,55 @@
     <main class="content">
       <h1 class="page-title">לוח בקרה</h1>
       <p class="page-subtitle" id="today"></p>
+      <div class="load-error" id="loadError" role="alert" hidden></div>
 
       <!-- Metric cards -->
       <section class="metrics" aria-label="מדדים עיקריים">
-        <article class="card metric">
+        <article class="card metric" data-metric="totalRevenue">
           <div class="metric-top">
             <span class="metric-name">סך ההכנסות</span>
             <span class="metric-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
             </span>
           </div>
-          <div class="metric-value"><span class="ltr">$127,450</span></div>
-          <span class="trend up" aria-label="עלייה של 12.4% לעומת החודש שעבר">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m18 15-6-6-6 6"/></svg>
-            <span class="ltr">12.4%</span>
-          </span>
+          <div class="metric-value"><span class="ltr">—</span></div>
+          <span class="trend" hidden></span>
           <span class="trend-note">לעומת החודש שעבר</span>
         </article>
 
-        <article class="card metric">
+        <article class="card metric" data-metric="newCustomers">
           <div class="metric-top">
             <span class="metric-name">לקוחות חדשים</span>
             <span class="metric-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6"/><path d="M22 11h-6"/></svg>
             </span>
           </div>
-          <div class="metric-value"><span class="ltr">1,247</span></div>
-          <span class="trend up" aria-label="עלייה של 8.2% לעומת החודש שעבר">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m18 15-6-6-6 6"/></svg>
-            <span class="ltr">8.2%</span>
-          </span>
+          <div class="metric-value"><span class="ltr">—</span></div>
+          <span class="trend" hidden></span>
           <span class="trend-note">לעומת החודש שעבר</span>
         </article>
 
-        <article class="card metric">
+        <article class="card metric" data-metric="avgOrderValue">
           <div class="metric-top">
             <span class="metric-name">ערך הזמנה ממוצע</span>
             <span class="metric-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
             </span>
           </div>
-          <div class="metric-value"><span class="ltr">$102.15</span></div>
-          <span class="trend down" aria-label="ירידה של 2.1% לעומת החודש שעבר">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
-            <span class="ltr">2.1%</span>
-          </span>
+          <div class="metric-value"><span class="ltr">—</span></div>
+          <span class="trend" hidden></span>
           <span class="trend-note">לעומת החודש שעבר</span>
         </article>
 
-        <article class="card metric">
+        <article class="card metric" data-metric="growthRate">
           <div class="metric-top">
             <span class="metric-name">שיעור צמיחה</span>
             <span class="metric-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 7 13.5 15.5 8.5 10.5 2 17"/><path d="M16 7h6v6"/></svg>
             </span>
           </div>
-          <div class="metric-value"><span class="ltr">+23.5%</span></div>
-          <span class="trend up" aria-label="עלייה של 4.3 נקודות אחוז לעומת החודש שעבר">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m18 15-6-6-6 6"/></svg>
-            <span class="ltr">4.3pp</span>
-          </span>
+          <div class="metric-value"><span class="ltr">—</span></div>
+          <span class="trend" hidden></span>
           <span class="trend-note">לעומת החודש שעבר</span>
         </article>
       </section>
@@ -1077,7 +1082,8 @@
     </main>
   </div>
 
-  <script>
+  <!-- A module script, so it can wait for data.json with top-level await. -->
+  <script type="module">
     // ---------- Today's date ----------
     const now = new Date();
     document.getElementById('today').textContent =
@@ -1183,39 +1189,79 @@
 
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    // ---------- Demo data ----------
-    // Deterministic pseudo-random numbers, so the demo shows the same figures on every load.
-    const seededRandom = (seed) => () => {
-      seed = (seed + 0x6d2b79f5) | 0;
-      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
-      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-    };
-
-    // Revenue per calendar month, oldest first; the last value is the current month.
-    const monthlyRevenue = [78200, 82400, 80100, 88900, 93500, 91200, 98700, 104300, 101800, 112600, 118900, 127450];
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-    const monthStart = (monthsAgo) => new Date(today.getFullYear(), today.getMonth() - monthsAgo, 1);
-    const addDays = (date, n) => new Date(date.getFullYear(), date.getMonth(), date.getDate() + n);
-
-    // Daily revenue up to today: each month's daily rate comes from its monthly figure,
-    // with quieter weekends (Fri/Sat) and some day-to-day noise.
-    const daily = [];
-    {
-      const rand = seededRandom(20240611);
-      for (let m = 11; m >= 0; m--) {
-        const first = monthStart(m);
-        const daysInMonth = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
-        const lastDay = m === 0 ? today.getDate() : daysInMonth;
-        const rate = monthlyRevenue[11 - m] / daysInMonth;
-        for (let d = 1; d <= lastDay; d++) {
-          const date = new Date(first.getFullYear(), first.getMonth(), d);
-          const dow = date.getDay();
-          const weekday = dow === 6 ? 0.7 : dow === 5 ? 0.82 : 1.07;
-          daily.push({ date, revenue: Math.round(rate * weekday * (0.85 + rand() * 0.3)) });
-        }
+    // ---------- Data (loaded from data.json) ----------
+    // All figures live in data.json: edit that file to update the dashboard.
+    let data;
+    try {
+      const res = await fetch('data.json', { cache: 'no-store' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      data = await res.json();
+    } catch (err) {
+      const box = document.getElementById('loadError');
+      const title = document.createElement('strong');
+      title.textContent = 'לא ניתן לטעון את נתוני לוח הבקרה';
+      const detail = document.createElement('span');
+      if (location.protocol === 'file:') {
+        // Browsers block fetch() for pages opened straight from disk.
+        detail.innerHTML = 'הדף נפתח ישירות מהקובץ, והדפדפן חוסם טעינה של <code>data.json</code> במצב זה. יש לפתוח את הדף דרך שרת מקומי, למשל <code>npx serve</code> או התוסף Live Server ב-VS Code.';
+      } else {
+        const code = document.createElement('code');
+        code.textContent = err.message;
+        detail.append('בדקו שהקובץ data.json קיים ושהוא בפורמט JSON תקין. פרטי השגיאה: ', code);
       }
+      box.replaceChildren(title, detail);
+      box.hidden = false;
+      throw err; // nothing below can render without data
+    }
+
+    // "2026-11-15" → local midnight (new Date('2026-11-15') would be UTC midnight).
+    const parseDay = (s) => {
+      const [y, m, d] = s.split('-').map(Number);
+      return new Date(y, m - 1, d || 1);
+    };
+    const byDate = (a, b) => a.date - b.date;
+
+    // Oldest first, whatever order the file lists them in. Ranges end at the latest entry.
+    const daily = data.dailyRevenue.map((d) => ({ date: parseDay(d.date), revenue: d.revenue })).sort(byDate);
+    const monthly = data.monthlyRevenue.map((m) => ({ date: parseDay(m.month), revenue: m.revenue })).sort(byDate);
+
+    // ---------- Metric cards ----------
+    {
+      const num = (opts) => new Intl.NumberFormat('en-US', opts);
+      const METRICS = {
+        totalRevenue:  { format: (v) => usd(v), unit: 'percent' },
+        newCustomers:  { format: (v) => num().format(v), unit: 'percent' },
+        avgOrderValue: { format: (v) => usd(v, 2), unit: 'percent' },
+        growthRate:    { format: (v) => num({ maximumFractionDigits: 1, signDisplay: 'exceptZero' }).format(v) + '%', unit: 'points' },
+      };
+      const ARROW = {
+        up: '<path d="m18 15-6-6-6 6"/>',
+        down: '<path d="m6 9 6 6 6-6"/>',
+      };
+      const fmtChange = num({ maximumFractionDigits: 1 });
+
+      document.querySelectorAll('.metric[data-metric]').forEach((card) => {
+        const def = METRICS[card.dataset.metric];
+        const m = data.metrics?.[card.dataset.metric];
+        if (!def || typeof m?.value !== 'number') return; // missing in data.json: keep the "—" placeholder
+
+        card.querySelector('.metric-value .ltr').textContent = def.format(m.value);
+
+        const trend = card.querySelector('.trend');
+        if (typeof m.change !== 'number') { trend.hidden = true; return; }
+        const dir = m.change > 0 ? 'up' : m.change < 0 ? 'down' : 'flat';
+        const amount = fmtChange.format(Math.abs(m.change));
+        const shown = def.unit === 'points' ? `${amount}pp` : `${amount}%`;
+        const spoken = def.unit === 'points' ? `${amount} נקודות אחוז` : `${amount}%`;
+        trend.className = `trend ${dir}`;
+        trend.setAttribute('aria-label', dir === 'flat'
+          ? 'ללא שינוי לעומת החודש שעבר'
+          : `${dir === 'up' ? 'עלייה' : 'ירידה'} של ${spoken} לעומת החודש שעבר`);
+        trend.innerHTML = (ARROW[dir]
+          ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ARROW[dir]}</svg>`
+          : '') + `<span class="ltr">${shown}</span>`;
+        trend.hidden = false;
+      });
     }
 
     // ---------- Buckets per range ----------
@@ -1233,12 +1279,13 @@
         value: d.revenue,
       }));
 
-    // Weeks of 7 days, the last one ending today.
+    // Weeks of 7 days, the last one ending on the latest day in the data.
+    // Counted back from the end, so if fewer days are given only the oldest week is short.
     const weeklyBuckets = (count) => {
       const days = daily.slice(-count * 7);
       const weeks = [];
-      for (let i = 0; i < days.length; i += 7) {
-        const week = days.slice(i, i + 7);
+      for (let end = days.length; end > 0; end -= 7) {
+        const week = days.slice(Math.max(0, end - 7), end);
         const start = week[0].date;
         const end = week[week.length - 1].date;
         weeks.push({
@@ -1251,10 +1298,11 @@
     };
 
     const monthlyBuckets = (count) =>
-      monthlyRevenue.slice(-count).map((value, i) => {
-        const date = monthStart(count - 1 - i);
-        return { label: fmtMonthShort.format(date), title: fmtMonthLong.format(date), value };
-      });
+      monthly.slice(-count).map((m) => ({
+        label: fmtMonthShort.format(m.date),
+        title: fmtMonthLong.format(m.date),
+        value: m.revenue,
+      }));
 
     const GRAIN = {
       day: { title: 'הכנסות יומיות', a11y: 'יומיות' },
@@ -1270,18 +1318,9 @@
       '12m': { label: '12 החודשים האחרונים', grain: 'month', build: () => monthlyBuckets(12) },
     };
 
-    // Category split of the range's total, so both charts always add up to the same number.
-    const categories = ['אלקטרוניקה', 'ביגוד', 'בית וגן', 'ספורט', 'יופי', 'ספרים'];
-    const categoryWeights = [342800, 248600, 196300, 151400, 98200, 61500];
-
-    const categorySplit = (rangeKey, total) => {
-      const rand = seededRandom([...rangeKey].reduce((h, ch) => h * 31 + ch.charCodeAt(0), 7));
-      const weights = categoryWeights.map((w) => w * (0.88 + rand() * 0.24));
-      const sum = weights.reduce((a, b) => a + b, 0);
-      const values = weights.map((w) => Math.round((total * w) / sum));
-      values[0] += total - values.reduce((a, b) => a + b, 0); // rounding leftover, so the sum matches exactly
-      return values;
-    };
+    // Revenue per product category; data.json gives one figure per category for each range.
+    const categories = data.categories.map((c) => c.name);
+    const categorySplit = (rangeKey) => data.categories.map((c) => c.revenue?.[rangeKey] ?? 0);
 
     // ---------- Chart defaults ----------
     // Chart colors per theme. The dark series blue is its own step, checked for contrast on the dark card.
@@ -1444,7 +1483,7 @@
     // ---------- Revenue by category (bars) ----------
     let barsGrown = false;
     const total = (buckets) => buckets.reduce((sum, b) => sum + b.value, 0);
-    let categoryValues = categorySplit(current.key, total(current.buckets));
+    let categoryValues = categorySplit(current.key);
 
     const categoryChart = new Chart(document.getElementById('categoryChart'), {
       type: 'bar',
@@ -1518,7 +1557,7 @@
 
     const setRange = (key) => {
       current = { key, buckets: RANGES[key].build() };
-      categoryValues = categorySplit(key, total(current.buckets));
+      categoryValues = categorySplit(key);
 
       revenueChart.$revealRun = (revenueChart.$revealRun ?? 0) + 1; // stop a running draw-in
       revenueChart.$reveal = 1;
@@ -1596,33 +1635,20 @@
       processing: 'בטיפול',
     };
 
-    // 50 demo orders, newest first, generated deterministically.
-    const FIRST_NAMES = ['נועה', 'יוסי', 'מיכל', 'דניאל', 'שירה', 'אורי', 'תמר', 'איתי', 'רוני', 'הדר', 'עומר', 'יעל', 'אביב', 'ליאת', 'גיל', 'מאיה', 'עידו', 'שני', 'אלון', 'רותם'];
-    const LAST_NAMES = ['כהן', 'לוי', 'אברהם', 'מזרחי', 'פרץ', 'ביטון', 'שפירא', 'גולן', 'אלון', 'וקנין', 'פרידמן', 'דהן', 'אזולאי', 'חדד', 'קפלן', 'רוזן'];
     const fmtOrderDate = fmt({ day: 'numeric', month: 'short', year: 'numeric' });
 
-    const orders = [];
-    {
-      const rand = seededRandom(10458);
-      const pick = (arr) => arr[Math.floor(rand() * arr.length)];
-      let t = now.getTime() - 3600e3;
-      for (let i = 0; i < 50; i++) {
-        const r = rand();
-        const status = i < 6 ? (r < 0.5 ? 'pending' : 'processing')
-          : i < 15 ? (r < 0.6 ? 'completed' : r < 0.8 ? 'processing' : 'pending')
-          : 'completed';
-        const date = new Date(t);
-        orders.push({
-          num: 10458 - i,
-          name: `${pick(FIRST_NAMES)} ${pick(LAST_NAMES)}`,
-          date,
-          dateText: fmtOrderDate.format(date),
-          amount: Math.round((40 + rand() ** 2 * 1100) * 100) / 100,
-          status,
-        });
-        t -= (3 + rand() * 13) * 3600e3; // the previous order came 3–16 hours earlier
-      }
-    }
+    // Order dates in data.json are local time, e.g. "2026-11-15T17:00:00".
+    const orders = data.orders.map((o) => {
+      const date = new Date(o.date);
+      return {
+        num: o.id,
+        name: String(o.customer),
+        date,
+        dateText: fmtOrderDate.format(date),
+        amount: Number(o.amount),
+        status: o.status,
+      };
+    });
 
     // ---------- Orders table: search, sort, pagination, selection ----------
     const PAGE_SIZE = 10;
@@ -1633,7 +1659,7 @@
       name: (a, b) => collator.compare(a.name, b.name),
       date: (a, b) => a.date - b.date,
       amount: (a, b) => a.amount - b.amount,
-      status: (a, b) => STATUS_RANK[a.status] - STATUS_RANK[b.status],
+      status: (a, b) => (STATUS_RANK[a.status] ?? 3) - (STATUS_RANK[b.status] ?? 3),
     };
 
     const table = { query: '', sortKey: 'date', sortDir: 'desc', page: 1, selected: new Set(), allRows: [], pageRows: [] };
@@ -1649,7 +1675,7 @@
     const escapeHtml = (s) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
     const matches = (o, q) =>
-      [`#${o.num}`, o.name, o.dateText, usd(o.amount, 2), String(o.amount), STATUS[o.status]]
+      [`#${o.num}`, o.name, o.dateText, usd(o.amount, 2), String(o.amount), STATUS[o.status] ?? o.status]
         .join(' ').toLowerCase().includes(q);
 
     const sortRows = (rows) => {
@@ -1712,10 +1738,10 @@
           <tr data-id="${o.num}">
             <td class="check"><input type="checkbox" class="row-check" aria-label="בחירת הזמנה ${o.num}"></td>
             <td class="order-id"><span class="ltr">#${o.num}</span></td>
-            <td>${o.name}</td>
+            <td>${escapeHtml(o.name)}</td>
             <td>${o.dateText}</td>
             <td class="amount"><span class="ltr">${usd(o.amount, 2)}</span></td>
-            <td><span class="status ${o.status}">${STATUS[o.status]}</span></td>
+            <td><span class="status ${escapeHtml(String(o.status))}">${escapeHtml(STATUS[o.status] ?? String(o.status))}</span></td>
           </tr>`).join('')
         : `<tr><td colspan="6" class="empty">לא נמצאו הזמנות התואמות ל„${escapeHtml(table.query.trim())}”</td></tr>`;
 
@@ -1795,7 +1821,7 @@
       };
       const lines = [
         ['מס׳ הזמנה', 'שם הלקוח', 'תאריך', 'סכום (USD)', 'סטטוס'],
-        ...rows.map((o) => [o.num, o.name, fmtExportDate.format(o.date), o.amount.toFixed(2), STATUS[o.status]]),
+        ...rows.map((o) => [o.num, o.name, fmtExportDate.format(o.date), o.amount.toFixed(2), STATUS[o.status] ?? o.status]),
       ].map((r) => r.map(cell).join(','));
 
       const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });

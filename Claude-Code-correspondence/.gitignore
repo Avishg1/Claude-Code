@@ -1,0 +1,14 @@
+node_modules/
+dist/
+coverage/
+test-results/
+screenshots/
+*.log
+.env
+config.local.json
+
+# Never commit real conversation data. Only fictional fixtures are allowed.
+*.jsonl
+!fixtures/**/*.jsonl
+# The large fixture is generated on demand (npm run fixtures:large)
+fixtures/projects/large-demo-project/
