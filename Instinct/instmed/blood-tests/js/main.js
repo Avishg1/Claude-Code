@@ -274,7 +274,7 @@ function renderCharts(records) {
 let batchSeq = 0;
 const STATUS_LABEL = { missing: 'חסר', unclear: 'לא ברור' };
 
-function setFileStatus(id, fileName, kind, message) {
+function setFileStatus(id, fileName, kind, message, extraHtml = '') {
   let li = document.getElementById(`fs-${id}`);
   if (!li) {
     li = document.createElement('li');
@@ -283,7 +283,7 @@ function setFileStatus(id, fileName, kind, message) {
   }
   li.className = `fs fs-${kind}`;
   li.setAttribute('role', kind === 'error' ? 'alert' : 'status');
-  li.innerHTML = `<bdi dir="ltr" class="fs-name">${esc(fileName)}</bdi><span class="fs-msg">${esc(message)}</span>`;
+  li.innerHTML = `<bdi dir="ltr" class="fs-name">${esc(fileName)}</bdi><span class="fs-msg">${esc(message)}</span>${extraHtml}`;
 }
 
 async function handleFiles(fileList) {
@@ -295,7 +295,7 @@ async function handleFiles(fileList) {
       const extracted = await extractPdf(file);
       const parsed = parseReport(extracted);
       if (!parsed.rows.length) {
-        setFileStatus(id, file.name, 'error', 'נמצא טקסט בקובץ, אך לא זוהו בו שורות תוצאות בדיקה. לא יובא דבר.');
+        setFileStatus(id, file.name, 'error', 'נמצא טקסט בקובץ, אך לא זוהו בו שורות תוצאות בדיקה. לא יובא דבר.', noRowsHelp(extracted, parsed));
         continue;
       }
       state.drafts.push({ id, fileName: file.name, numPages: extracted.numPages, pages: extracted.pages, ...parsed });
@@ -309,14 +309,45 @@ async function handleFiles(fileList) {
   renderReviews();
 }
 
+/** Explains a "no rows" result and shows the extracted text (in this browser only) so the layout can be checked. */
+function noRowsHelp(extracted, parsed) {
+  const hint = parsed.headerRows
+    ? 'זוהתה שורת כותרת של טבלה, אך השורות שמתחתיה לא נקראו כשורות תוצאה (שם בדיקה + ערך, יחידה או טווח).'
+    : 'לא זוהתה שורת כותרת של טבלת תוצאות. המנתח מחפש שורה עם כותרות עמודות כמו: "בדיקה" / "Test", "תוצאה" / "Result", "יחידות" / "Units", "טווח ייחוס" / "ערכים תקינים" / "Reference".';
+  return `
+    <div class="fs-help">
+      <p>${esc(hint)}</p>
+      ${extracted.reversedHebrew ? '<p>הטקסט העברי בקובץ שמור בסדר הפוך — המערכת הפכה אותו לקריאה.</p>' : ''}
+      <details class="source-text">
+        <summary>הצגת הטקסט שחולץ מהקובץ (נשאר במחשב שלך בלבד)</summary>
+        ${extracted.pages.map((pg) => `
+          <div class="src-page-block">
+            <div class="src-page-title">עמוד ${pg.pageNumber}</div>
+            <ol>${pg.lines.map((l) => `<li><bdi dir="auto">${esc(l.cells.map((c) => c.text).join('  │  '))}</bdi></li>`).join('')}</ol>
+          </div>`).join('')}
+      </details>
+    </div>`;
+}
+
 function rowStatusBadges(row) {
   const out = [];
   const v = String(row.valueText ?? '').trim();
   if (!v) out.push(`<span class="st st-${row.valueStatus === 'unclear' ? 'unclear' : 'missing'}">ערך: ${row.valueStatus === 'unclear' ? 'לא ברור' : 'חסר'}</span>`);
   else if (parseStrictNumber(v) == null) out.push('<span class="st st-unclear">ערך לא מספרי — ללא סימון</span>');
   if (!String(row.unit ?? '').trim()) out.push(`<span class="st st-${row.unitStatus === 'unclear' ? 'unclear' : 'missing'}">יחידה: ${STATUS_LABEL[row.unitStatus] || 'חסר'}</span>`);
-  if (!String(row.rangeText ?? '').trim()) out.push(`<span class="st st-${row.rangeStatus === 'unclear' ? 'unclear' : 'missing'}">${row.rangeStatus === 'unclear' ? 'טווח: לא ברור' : 'טווח ייחוס לא ידוע'}</span>`);
+  if (!String(row.rangeText ?? '').trim()) {
+    out.push(`<span class="st st-${row.rangeStatus === 'unclear' ? 'unclear' : 'missing'}">${row.rangeStatus === 'unclear' ? 'טווח: לא ברור' : 'טווח ייחוס לא ידוע'}</span>`);
+    // Limits printed separately (e.g. at the ends of a range bar) — applied only if the user clicks.
+    if (row.rangeHint) out.push(`<button type="button" class="hint-btn use-hint">שימוש בגבולות שהודפסו: <bdi dir="ltr">${esc(row.rangeHint)}</bdi></button>`);
+  }
   return out.join('') || '<span class="st st-ok">נקרא</span>';
+}
+
+function applyHint(row, tr) {
+  row.rangeText = row.rangeHint;
+  row.rangeStatus = 'ok';
+  tr.querySelector('.in-range').value = row.rangeText;
+  tr.querySelector('.row-status').innerHTML = rowStatusBadges(row);
 }
 
 function renderReviews() {
@@ -331,6 +362,12 @@ function renderReviews() {
             <p class="section-sub">${d.numPages} עמודים · ${d.rows.length} שורות זוהו. יש להשוות כל שורה לשורת המקור, לתקן או למחוק לפי הצורך.</p>
           </div>
         </div>
+        ${d.rows.some((r) => r.rangeHint && !r.rangeText) ? `
+        <div class="hint-bar">
+          <p>בדוח זה טווח הנורמה מוצג כגרף, ולצידו הודפסו שני גבולות בלבד. המערכת לא הפכה אותם לטווח באופן אוטומטי.
+          יש לוודא מול הדוח שאלה גבולות טווח הנורמה, ואז להחיל אותם — לכל שורה בנפרד או לכולן.</p>
+          <button type="button" class="btn btn-secondary use-all-hints">החלת הגבולות שהודפסו על כל השורות (${d.rows.filter((r) => r.rangeHint && !r.rangeText).length})</button>
+        </div>` : ''}
 
         <div class="review-meta">
           <label class="field">
@@ -414,6 +451,21 @@ function onReviewInput(e) {
 function onReviewClick(e) {
   const { sec, draft } = draftFromEvent(e);
   if (!draft) return;
+  if (e.target.closest('.use-hint')) {
+    const tr = e.target.closest('tr[data-row]');
+    const row = draft.rows.find((r) => r.id === tr.dataset.row);
+    if (row?.rangeHint) applyHint(row, tr);
+    return;
+  }
+  if (e.target.closest('.use-all-hints')) {
+    for (const row of draft.rows) {
+      if (!row.rangeHint || String(row.rangeText ?? '').trim()) continue;
+      const tr = sec.querySelector(`tr[data-row="${row.id}"]`);
+      if (tr) applyHint(row, tr);
+    }
+    e.target.closest('.hint-bar').hidden = true;
+    return;
+  }
   if (e.target.closest('.del-row')) {
     const tr = e.target.closest('tr[data-row]');
     draft.rows = draft.rows.filter((r) => r.id !== tr.dataset.row);

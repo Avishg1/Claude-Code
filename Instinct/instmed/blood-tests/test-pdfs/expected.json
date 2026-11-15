@@ -219,9 +219,166 @@
         }
       ]
     },
+    "delta-2026-10-05-hebrew-extra-columns.pdf": {
+      "kind": "ok",
+      "date": "2026-10-05",
+      "lab": "מעבדת דלתא (בדיונית)",
+      "rows": [
+        {
+          "name": "המוגלובין (Hemoglobin)",
+          "value": "13.0",
+          "unit": "g/dL",
+          "range": "12.0-16.0"
+        },
+        {
+          "name": "גלוקוז בצום",
+          "value": "88",
+          "unit": "mg/dL",
+          "range": "70-100"
+        },
+        {
+          "name": "פריטין",
+          "value": "25",
+          "unit": "ng/mL",
+          "range": "15-150"
+        },
+        {
+          "name": "ויטמין B12",
+          "value": "520",
+          "unit": "pg/mL",
+          "range": "200-900"
+        },
+        {
+          "name": "כולסטרול LDL",
+          "value": "131",
+          "unit": "mg/dL",
+          "range": "< 130"
+        }
+      ]
+    },
+    "epsilon-2026-10-20-english-no-name-header.pdf": {
+      "kind": "ok",
+      "date": "2026-10-20",
+      "lab": "Epsilon Clinical Lab (fictional)",
+      "rows": [
+        {
+          "name": "Sodium",
+          "value": "140",
+          "unit": "mmol/L",
+          "range": "136 - 145"
+        },
+        {
+          "name": "Potassium",
+          "value": "4.1",
+          "unit": "mmol/L",
+          "range": "3.5 - 5.1"
+        },
+        {
+          "name": "Calcium",
+          "value": "10.9",
+          "unit": "mg/dL",
+          "range": "8.6 - 10.3"
+        },
+        {
+          "name": "Magnesium",
+          "value": "",
+          "valueStatus": "missing",
+          "unit": "mg/dL",
+          "range": "1.7 - 2.2"
+        }
+      ]
+    },
+    "eta-2026-10-28-hebrew-tight-columns.pdf": {
+      "kind": "ok",
+      "date": "2026-10-28",
+      "lab": "מעבדת אטה (בדיונית)",
+      "rows": [
+        {
+          "name": "המוגלובין",
+          "value": "13.1",
+          "unit": "g/dL",
+          "range": "12.0-16.0"
+        },
+        {
+          "name": "גלוקוז",
+          "value": "91",
+          "unit": "mg/dL",
+          "range": "70-100"
+        },
+        {
+          "name": "כולסטרול כללי",
+          "value": "201",
+          "unit": "mg/dL",
+          "range": "< 200"
+        },
+        {
+          "name": "TSH",
+          "value": "1.9",
+          "unit": "mIU/L",
+          "range": "0.4-4.0"
+        },
+        {
+          "name": "ויטמין D",
+          "value": "",
+          "valueStatus": "missing",
+          "unit": "ng/mL",
+          "range": "30-100"
+        }
+      ]
+    },
+    "theta-2026-11-03-hebrew-range-bar.pdf": {
+      "kind": "ok",
+      "date": "2026-11-03",
+      "lab": "מעבדת תטא (בדיונית)",
+      "rows": [
+        {
+          "name": "המוגלובין",
+          "value": "13.4",
+          "unit": "g/dL",
+          "range": "",
+          "rangeStatus": "unclear",
+          "rangeHint": "12.0-16.0"
+        },
+        {
+          "name": "גלוקוז",
+          "value": "96",
+          "unit": "mg/dL",
+          "range": "",
+          "rangeStatus": "unclear",
+          "rangeHint": "70-100"
+        },
+        {
+          "name": "TSH",
+          "value": "5.9",
+          "unit": "mIU/L",
+          "range": "",
+          "rangeStatus": "unclear",
+          "rangeHint": "0.4-4.0"
+        },
+        {
+          "name": "כולסטרול כללי",
+          "value": "188",
+          "unit": "mg/dL",
+          "range": "< 200"
+        },
+        {
+          "name": "ויטמין D",
+          "value": "",
+          "valueStatus": "missing",
+          "unit": "ng/mL",
+          "range": "",
+          "rangeStatus": "unclear",
+          "rangeHint": "30-100"
+        }
+      ]
+    },
     "scanned-no-text-layer.pdf": {
       "kind": "error",
       "code": "noText"
+    },
+    "zeta-letter-no-table.pdf": {
+      "kind": "error",
+      "code": "noRows"
     },
     "bad-not-a-pdf.pdf": {
       "kind": "error",

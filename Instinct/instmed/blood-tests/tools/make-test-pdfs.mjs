@@ -106,9 +106,90 @@ const reports = [
       return { name, value: value.replace(/\s*H$/, ''), unit, range };
     },
   },
+  {
+    file: 'delta-2026-10-05-hebrew-extra-columns.pdf',
+    lang: 'he', dir: 'rtl',
+    // Extra columns (date, notes), other header words, and larger bold test names than the numbers.
+    css: 'td:nth-child(2) { font-size: 13pt; font-weight: bold; } td { font-size: 9.5pt; }',
+    lines: ['מעבדת דלתא (בדיונית)', 'מסמך הדגמה בדיוני — אינו דוח מעבדה אמיתי', 'תאריך קבלת דגימה: 05/10/2026'],
+    header: ['תאריך', 'שם בדיקה', 'תוצאות', 'יחידות מידה', 'ערכים תקינים', 'הערות'], unitCol: 3,
+    rows: [
+      ['05/10/2026', 'המוגלובין (Hemoglobin)', '13.0', 'g/dL', '12.0-16.0', ''],
+      ['05/10/2026', 'גלוקוז בצום', '88', 'mg/dL', '70-100', ''],
+      ['05/10/2026', 'פריטין', '25', 'ng/mL', '15-150', ''],
+      ['05/10/2026', 'ויטמין B12', '520', 'pg/mL', '200-900', ''],
+      ['05/10/2026', 'כולסטרול LDL', '131', 'mg/dL', '< 130', 'גבוה'],
+    ],
+    expected: { date: '2026-10-05', lab: 'מעבדת דלתא (בדיונית)' },
+    toExpected: ([, name, value, unit, range]) => ({ name, value, unit, range }),
+  },
+  {
+    file: 'epsilon-2026-10-20-english-no-name-header.pdf',
+    lang: 'en', dir: 'ltr',
+    // Blank header above the test names; "Normal values" / "Status" columns; one blank value.
+    lines: ['Epsilon Clinical Lab (fictional)', 'FICTIONAL DEMO DOCUMENT - NOT A REAL LAB REPORT', 'Date of collection: 2026-10-20'],
+    header: ['', 'Results', 'Units', 'Normal values', 'Status'],
+    rows: [
+      ['Sodium', '140', 'mmol/L', '136 - 145', ''],
+      ['Potassium', '4.1', 'mmol/L', '3.5 - 5.1', ''],
+      ['Calcium', '10.9', 'mg/dL', '8.6 - 10.3', 'High'],
+      ['Magnesium', '', 'mg/dL', '1.7 - 2.2', ''],
+    ],
+    expected: { date: '2026-10-20', lab: 'Epsilon Clinical Lab (fictional)' },
+    toExpected: ([name, value, unit, range]) => (value ? { name, value, unit, range } : { name, value: '', valueStatus: 'missing', unit, range }),
+  },
+  {
+    file: 'eta-2026-10-28-hebrew-tight-columns.pdf',
+    lang: 'he', dir: 'rtl',
+    // No table: each row is one line of text with single spaces, so the PDF has no column gaps.
+    asText: true,
+    lines: ['מעבדת אטה (בדיונית)', 'מסמך הדגמה בדיוני — אינו דוח מעבדה אמיתי', 'תאריך בדיקה: 28/10/2026'],
+    header: ['שם בדיקה', 'תוצאה', 'יחידות', 'טווח ייחוס'],
+    rows: [
+      ['המוגלובין', '13.1', 'g/dL', '12.0-16.0'],
+      ['גלוקוז', '91', 'mg/dL', '70-100'],
+      ['כולסטרול כללי', '201', 'mg/dL', '< 200'],
+      ['TSH', '1.9', 'mIU/L', '0.4-4.0'],
+      ['ויטמין D', '—', 'ng/mL', '30-100'],
+    ],
+    expected: { date: '2026-10-28', lab: 'מעבדת אטה (בדיונית)' },
+    toExpected: ([name, value, unit, range]) => (value === '—' ? { name, value: '', valueStatus: 'missing', unit, range } : { name, value, unit, range }),
+  },
+  {
+    file: 'theta-2026-11-03-hebrew-range-bar.pdf',
+    lang: 'he', dir: 'rtl',
+    // Layout seen on some Israeli lab result PDFs: no unit column (unit printed with the result),
+    // and a graphical "result vs. normal range" column that prints only the two limits.
+    css: 'td { vertical-align: top; } .bar { display: inline-flex; align-items: center; gap: 6px; } .track { display: inline-block; width: 110px; height: 8px; background: #cfe3d6; border-radius: 4px; position: relative; } .mark { position: absolute; top: -16px; left: 70px; font-size: 9pt; } .limits { display: flex; justify-content: space-between; width: 170px; font-size: 9pt; color: #444; }',
+    lines: ['מעבדת תטא (בדיונית)', 'מסמך הדגמה בדיוני — אינו דוח מעבדה אמיתי', 'תאריך בדיקה: 03/11/2026'],
+    header: ['שם הבדיקה', 'תוצאה', 'תוצאה לעומת טווח הנורמה'],
+    rowsHtml: [
+      ['המוגלובין', '13.4 <span dir="ltr">g/dL</span>', "<div class=\"bar\"><span>12.0</span><span class=\"track\"></span><span>16.0</span></div>"],
+      ['גלוקוז', '96 <span dir="ltr">mg/dL</span>', '<div class="bar"><span class="track"></span></div><div class="limits"><span>70</span><span>100</span></div>'],
+      ['TSH', '5.9 <span dir="ltr">mIU/L</span>', "<div class=\"bar\"><span>0.4</span><span class=\"track\"><span class=\"mark\">5.9</span></span><span>4.0</span></div>"],
+      ['כולסטרול כללי', '188 <span dir="ltr">mg/dL</span>', '&lt; 200'],
+      ['ויטמין D', '— <span dir="ltr">ng/mL</span>', "<div class=\"bar\"><span>30</span><span class=\"track\"></span><span>100</span></div>"],
+    ],
+    expectedRows: [
+      { name: 'המוגלובין', value: '13.4', unit: 'g/dL', range: '', rangeStatus: 'unclear', rangeHint: '12.0-16.0' },
+      { name: 'גלוקוז', value: '96', unit: 'mg/dL', range: '', rangeStatus: 'unclear', rangeHint: '70-100' },
+      { name: 'TSH', value: '5.9', unit: 'mIU/L', range: '', rangeStatus: 'unclear', rangeHint: '0.4-4.0' },
+      { name: 'כולסטרול כללי', value: '188', unit: 'mg/dL', range: '< 200' },
+      { name: 'ויטמין D', value: '', valueStatus: 'missing', unit: 'ng/mL', range: '', rangeStatus: 'unclear', rangeHint: '30-100' },
+    ],
+    expected: { date: '2026-11-03', lab: 'מעבדת תטא (בדיונית)' },
+  },
 ];
 
 function reportHtml(r) {
+  if (r.asText) {
+    return `<!DOCTYPE html><html lang="${r.lang}" dir="${r.dir}"><head><meta charset="utf-8"><title>-</title>
+<style>@page { size: A4; margin: 18mm; } body { font-family: Arial, sans-serif; font-size: 11pt; } p { margin: 4px 0; } .top p:first-child { font-size: 16pt; font-weight: bold; } .demo { color: #a00; font-weight: bold; } .hdr { font-weight: bold; margin-top: 14px; }</style></head><body>
+<div class="top">${r.lines.map((l, i) => `<p class="${i === 1 ? 'demo' : ''}">${esc(l)}</p>`).join('')}</div>
+<p class="hdr">${esc(r.header.join(' '))}</p>
+${r.rows.map((row) => `<p>${esc(row.join(' '))}</p>`).join('')}
+</body></html>`;
+  }
   return `<!DOCTYPE html><html lang="${r.lang}" dir="${r.dir}"><head><meta charset="utf-8"><title>-</title>
 <style>
   @page { size: A4; margin: 18mm; }
@@ -118,10 +199,11 @@ function reportHtml(r) {
   table { border-collapse: collapse; margin-top: 18px; width: 100%; }
   th, td { padding: 6px 12px; border-bottom: 1px solid #bbb; text-align: start; }
   th { background: #eee; }
+  ${r.css || ''}
 </style></head><body>
 <div class="top">${r.lines.map((l, i) => `<p class="${i === 1 ? 'demo' : ''}">${esc(l)}</p>`).join('')}</div>
 <table><thead><tr>${r.header.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead>
-<tbody>${r.rows.map((row) => `<tr>${row.map((c, i) => `<td${i === r.unitCol ? ' dir="ltr"' : ''}>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table>
+<tbody>${r.rowsHtml ? r.rowsHtml.map((row) => `<tr>${row.map((c) => `<td>${c}</td>`).join('')}</tr>`).join('') : r.rows.map((row) => `<tr>${row.map((c, i) => `<td${i === r.unitCol ? ' dir="ltr"' : ''}>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table>
 </body></html>`;
 }
 
@@ -187,7 +269,7 @@ for (const r of reports) {
   const htmlFile = path.join(TMP, r.file.replace(/\.pdf$/, '.html'));
   fs.writeFileSync(htmlFile, reportHtml(r));
   printToPdf(htmlFile, path.join(OUT, r.file));
-  expected.files[r.file] = { kind: 'ok', ...r.expected, rows: r.rows.map(r.toExpected) };
+  expected.files[r.file] = { kind: 'ok', ...r.expected, rows: r.expectedRows || r.rows.map(r.toExpected) };
   console.log('✓', r.file);
 }
 
@@ -199,6 +281,16 @@ fs.writeFileSync(scanHtml, `<!DOCTYPE html><html><head><meta charset="utf-8"><st
 printToPdf(scanHtml, path.join(OUT, 'scanned-no-text-layer.pdf'));
 expected.files['scanned-no-text-layer.pdf'] = { kind: 'error', code: 'noText' };
 console.log('✓ scanned-no-text-layer.pdf');
+
+// Text-based PDF without any results table → "no result rows found" (with the diagnostic view).
+const letterHtml = path.join(TMP, 'letter.html');
+fs.writeFileSync(letterHtml, `<!DOCTYPE html><html lang="he" dir="rtl"><head><meta charset="utf-8"><style>@page{size:A4;margin:22mm}body{font-family:Arial;font-size:12pt;line-height:1.7}</style></head><body>
+<p><b>מכתב הדגמה בדיוני — אינו מסמך רפואי אמיתי</b></p>
+<p>שלום רב, זהו מכתב לדוגמה שאין בו טבלת תוצאות. הוא משמש לבדיקה שהמערכת מודיעה בבירור כאשר לא נמצאו שורות תוצאה, ואינה מייבאת דבר.</p>
+<p>בברכה, צוות ההדגמה.</p></body></html>`);
+printToPdf(letterHtml, path.join(OUT, 'zeta-letter-no-table.pdf'));
+expected.files['zeta-letter-no-table.pdf'] = { kind: 'error', code: 'noRows' };
+console.log('✓ zeta-letter-no-table.pdf');
 
 fs.writeFileSync(path.join(OUT, 'bad-not-a-pdf.pdf'), 'This is a plain text file with a .pdf extension (fictional test file).\n');
 expected.files['bad-not-a-pdf.pdf'] = { kind: 'error', code: 'notPdf' };

@@ -1,6 +1,7 @@
 // Local PDF text extraction with the bundled pdf.js (no CDN, no fonts, no wasm, no network).
 // The worker is created once at app start, so importing a PDF makes no network requests.
 import * as pdfjsLib from '../vendor/pdfjs/pdf.min.mjs';
+import { HEB, mirror, mirrorable, looksReversed, reverseVisual } from './bidi.js';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('../vendor/pdfjs/pdf.worker.min.mjs', import.meta.url).href;
 
@@ -30,10 +31,7 @@ const MSG = {
 };
 export const errorMessage = (code) => MSG[code] || MSG.generic;
 
-const HEB = /[֐-׿]/;
-const MIRROR = { '(': ')', ')': '(', '[': ']', ']': '[', '{': '}', '}': '{', '<': '>', '>': '<', '≤': '≥', '≥': '≤' };
-const mirrorable = (s) => /^[\s()[\]{}<>≤≥]+$/.test(s);
-const mirror = (s) => s.replace(/[()[\]{}<>≤≥]/g, (c) => MIRROR[c]);
+// HEB, mirror(), mirrorable(), looksReversed(), reverseVisual() — see bidi.js
 
 const LATIN = /[A-Za-zµμ]/;
 const kindOf = (s) => (HEB.test(s) ? 'R' : LATIN.test(s) ? 'L' : /\d/.test(s) ? 'N' : 'O');
@@ -45,9 +43,13 @@ const kindOf = (s) => (HEB.test(s) ? 'R' : LATIN.test(s) ? 'L' : /\d/.test(s) ? 
  * consecutive Latin items (with any neutral between them) form one left-to-right run,
  * like the Unicode bidi algorithm does. Standalone brackets / < > in RTL appear mirrored.
  */
-function joinCell(items, lineRtl) {
+function joinCell(items, lineRtl, reversed) {
   const visual = [...items].sort((a, b) => a.x0 - b.x0);
   const gapBefore = (i) => i > 0 && visual[i].x0 - visual[i - 1].x1 > visual[i].h * 0.15;
+  if (lineRtl && reversed) {
+    // The PDF stores this RTL line in visual order: read it as drawn, then reverse to logical order.
+    return reverseVisual(visual.map((it, i) => (gapBefore(i) ? ' ' : '') + it.str).join('')).replace(/s+/g, ' ').trim();
+  }
   if (!lineRtl) {
     return visual.map((it, i) => (gapBefore(i) ? ' ' : '') + it.str).join('').replace(/\s+/g, ' ').trim();
   }
@@ -76,13 +78,15 @@ function joinCell(items, lineRtl) {
     let s = '';
     for (let i = from; i <= to; i++) s += (i > from && gapBefore(i) ? ' ' : '') + visual[i].str;
     if (!run && mirrorable(s)) s = mirror(s);
+    // A one-piece comparison laid out visually in an RTL line: "200 >" is logically "< 200".
+    else if (!run) s = s.replace(/^(-?d+(?:[.,]d+)?)(s*)([<>≤≥]=?)$/, (m, num, sp, op) => `${mirror(op)}${sp ? ' ' : ''}${num}`);
     out += s;
     if (gapBefore(from)) out += ' ';
   }
   return out.replace(/\s+/g, ' ').trim();
 }
 
-function toLines(textContent) {
+function toLines(textContent, reversed) {
   const items = [];
   for (const it of textContent.items) {
     if (!it.str || !it.str.trim()) continue;
@@ -94,7 +98,7 @@ function toLines(textContent) {
 
   const lines = [];
   for (const it of items) {
-    const line = lines.find((l) => Math.abs(l.y - it.y) <= Math.max(2, Math.min(l.h, it.h) * 0.4));
+    const line = lines.find((l) => Math.abs(l.y - it.y) <= Math.max(2, Math.min(l.h, it.h) * 0.5));
     if (line) { line.items.push(it); line.h = Math.max(line.h, it.h); } else lines.push({ y: it.y, h: it.h, items: [it] });
   }
   lines.sort((a, b) => b.y - a.y);
@@ -113,9 +117,9 @@ function toLines(textContent) {
     }
     // Paragraph direction of the line: RTL when it contains any Hebrew.
     const rtl = l.items.some((it) => HEB.test(it.str));
-    const out = cells.map((c) => ({ text: joinCell(c.items, rtl), x0: c.x0, x1: c.x1 })).filter((c) => c.text);
+    const out = cells.map((c) => ({ text: joinCell(c.items, rtl, reversed), x0: c.x0, x1: c.x1 })).filter((c) => c.text);
     if (rtl) out.sort((a, b) => b.x1 - a.x1); // reading order
-    return { y: l.y, rtl, cells: out, text: out.map((c) => c.text).join('   ') };
+    return { y: l.y, h: l.h, rtl, cells: out, text: out.map((c) => c.text).join('   ') };
   });
 }
 
@@ -163,16 +167,21 @@ export async function extractPdf(file) {
     if (doc.numPages > MAX_PAGES) throw new ImportError('tooManyPages', MSG.tooManyPages);
     const pages = [];
     let chars = 0;
+    // Read all pages first, so the reversed-Hebrew check sees the whole document.
+    const contents = [];
     for (let p = 1; p <= doc.numPages; p++) {
       const page = await doc.getPage(p);
-      const tc = await page.getTextContent();
-      const lines = toLines(tc);
-      chars += lines.reduce((s, l) => s + l.text.replace(/\s/g, '').length, 0);
-      pages.push({ pageNumber: p, lines });
+      contents.push(await page.getTextContent());
       page.cleanup();
     }
+    const reversed = looksReversed(contents.flatMap((tc) => tc.items.map((it) => it.str)));
+    for (let p = 1; p <= doc.numPages; p++) {
+      const lines = toLines(contents[p - 1], reversed);
+      chars += lines.reduce((s, l) => s + l.text.replace(/\s/g, '').length, 0);
+      pages.push({ pageNumber: p, lines });
+    }
     if (chars < 20) throw new ImportError('noText', MSG.noText);
-    return { numPages: doc.numPages, pages };
+    return { numPages: doc.numPages, pages, reversedHebrew: reversed };
   } catch (err) {
     if (err instanceof ImportError) throw err;
     throw new ImportError('corrupt', MSG.corrupt);

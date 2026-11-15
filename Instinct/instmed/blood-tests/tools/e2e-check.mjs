@@ -132,16 +132,17 @@ async function main() {
   const expected = JSON.parse(fs.readFileSync(path.join(ROOT, 'test-pdfs', 'expected.json'), 'utf8')).files;
   const before = requests.length;
   const { root } = await send('DOM.getDocument', { depth: -1 });
-  const ERR_WORD = { noText: 'שכבת טקסט', notPdf: 'אינו קובץ PDF', corrupt: 'פגום', password: 'סיסמה', tooLarge: 'גדול מדי' };
+  const ERR_WORD = { noText: 'שכבת טקסט', notPdf: 'אינו קובץ PDF', corrupt: 'פגום', password: 'סיסמה', tooLarge: 'גדול מדי', noRows: 'לא זוהו' };
 
   for (const [file, exp] of Object.entries(expected)) {
     const { nodeId } = await send('DOM.querySelector', { nodeId: root.nodeId, selector: '#fileInput' });
     await send('DOM.setFileInputFiles', { nodeId, files: [path.join(ROOT, 'test-pdfs', file)] });
     const statusExpr = `[...document.querySelectorAll('#fileStatus .fs')].find(li => li.querySelector('.fs-name').textContent === ${JSON.stringify(file)} && !li.classList.contains('fs-busy'))`;
     await waitFor(`!!${statusExpr}`);
-    const st = await evaluate(`(() => { const li = ${statusExpr}; return li ? { cls: li.className, msg: li.querySelector('.fs-msg').textContent } : null; })()`);
+    const st = await evaluate(`(() => { const li = ${statusExpr}; return li ? { cls: li.className, msg: li.querySelector('.fs-msg').textContent, help: !!li.querySelector('.fs-help details li') } : null; })()`);
     if (exp.kind === 'error') {
       check(`${file}: rejected with Hebrew error, nothing imported`, st && st.cls.includes('fs-error') && st.msg.includes(ERR_WORD[exp.code]), st?.msg);
+      if (exp.code === 'noRows') check(`${file}: shows why, with the extracted text`, st?.help);
       continue;
     }
     const got = await evaluate(`(() => {
@@ -153,7 +154,8 @@ async function main() {
         rows: [...sec.querySelectorAll('tr[data-row]')].map(tr => ({
           name: tr.querySelector('.in-name').value, value: tr.querySelector('.in-value').value,
           unit: tr.querySelector('.in-unit').value, range: tr.querySelector('.in-range').value,
-          status: tr.querySelector('.row-status').textContent, source: tr.querySelector('.src-line').textContent })),
+          status: tr.querySelector('.row-status').textContent, source: tr.querySelector('.src-line').textContent,
+          hint: tr.querySelector('.use-hint bdi')?.textContent || '' })),
       };
     })()`);
     if (!got) { check(`${file}: review screen shown`, false, st?.msg); continue; }
@@ -167,10 +169,22 @@ async function main() {
       for (const k of ['name', 'value', 'unit', 'range']) if (g[k].normalize('NFKC') !== er[k].normalize('NFKC')) mismatches.push(`row ${i + 1} ${k}: "${g[k]}" ≠ "${er[k]}"`);
       if (er.valueStatus === 'missing' && !g.status.includes('ערך: חסר')) mismatches.push(`row ${i + 1}: not marked חסר`);
       if (er.valueStatus === 'unclear' && !g.status.includes('ערך: לא ברור')) mismatches.push(`row ${i + 1}: not marked לא ברור`);
-      if (!er.range && !g.status.includes('טווח ייחוס לא ידוע')) mismatches.push(`row ${i + 1}: missing range not marked`);
+      if (er.rangeStatus === 'unclear' && !g.status.includes('טווח: לא ברור')) mismatches.push(`row ${i + 1}: range not marked לא ברור`);
+      else if (!er.range && er.rangeStatus !== 'unclear' && !g.status.includes('טווח ייחוס לא ידוע')) mismatches.push(`row ${i + 1}: missing range not marked`);
+      if ((er.rangeHint || '') !== (g.hint || '')) mismatches.push(`row ${i + 1} printed-limits hint: "${g.hint}" ≠ "${er.rangeHint || ''}" [source: ${g.source}]`);
     });
     check(`${file}: values, units and ranges match the PDF exactly`, mismatches.length === 0, mismatches.join('; ') || `${exp.rows.length} rows`);
     check(`${file}: each row shows its source line`, got.rows.every((r) => r.source.trim().length > 0));
+    if (exp.rows.some((r) => r.rangeHint)) {
+      // Printed limits are applied only on the user's click.
+      const applied = await evaluate(`(() => {
+        const sec = [...document.querySelectorAll('.review')].find(s => s.querySelector('h2').textContent.trim() === ${JSON.stringify(file)});
+        sec.querySelector('.use-all-hints').click();
+        return [...sec.querySelectorAll('tr[data-row]')].map(tr => tr.querySelector('.in-range').value);
+      })()`);
+      const want = exp.rows.map((r) => r.rangeHint || r.range);
+      check(`${file}: "apply printed limits" fills the ranges only after a click`, JSON.stringify(applied) === JSON.stringify(want), applied.join(' | '));
+    }
   }
 
   // Very large file (synthetic, in memory only)

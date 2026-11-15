@@ -27,6 +27,7 @@ const ALLOWED = new Set([
   '/js/store.js',
   '/js/pdf-extract.js',
   '/js/parser.js',
+  '/js/bidi.js',
   '/vendor/pdfjs/pdf.min.mjs',
   '/vendor/pdfjs/pdf.worker.min.mjs',
 ]);

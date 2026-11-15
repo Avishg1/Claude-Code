@@ -5,6 +5,11 @@
   --band: #e9efff;
   --band-edge: #a8bcfb;
   --bg: #f3f5fb;
+  --page-top: #0f1b36;      /* dark navy */
+  --page-bottom: #222428;   /* dark charcoal */
+  --on-dark: #eef1f8;
+  --on-dark-2: #b7bfd3;
+  --on-dark-muted: #8e97ad;
   --surface: #ffffff;
   --surface-2: #f7f8fc;
   --border: #e6e9f2;
@@ -30,12 +35,16 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* Page background: dark navy (top) → dark charcoal (bottom), fixed to the viewport */
+html {
+  min-height: 100%;
+  background: linear-gradient(180deg, var(--page-top) 0%, var(--page-bottom) 100%) fixed;
+  background-color: var(--page-bottom);
+}
+
 body {
   font-family: var(--font);
-  background:
-    radial-gradient(1200px 500px at 85% -120px, rgba(55, 87, 245, .10), transparent 60%),
-    radial-gradient(900px 400px at 0% 0%, rgba(124, 92, 255, .08), transparent 60%),
-    var(--bg);
+  background: transparent;
   color: var(--text);
   font-size: 15px;
   line-height: 1.55;
@@ -497,3 +506,31 @@ input::placeholder { color: #a7aec2; font-style: italic; }
   .review-table td:last-child { text-align: left; }
   .src-cell { min-width: 0; }
 }
+
+/* =================== Text placed directly on the dark page background =================== */
+.hero h1 { color: var(--on-dark); }
+.hero .sub { color: var(--on-dark-2); }
+.hero-kicker { color: var(--on-dark-muted); }
+.hero-icon { box-shadow: 0 10px 28px -8px rgba(91, 123, 255, .55), inset 0 1px 0 rgba(255, 255, 255, .3); }
+.source-note { color: var(--on-dark-2); }
+.source-note strong { color: var(--on-dark); }
+.charts-section > .section-head h2 { color: var(--on-dark); }
+.charts-section > .section-head .section-sub { color: var(--on-dark-2); }
+.page-footer { color: var(--on-dark-muted); }
+/* White surfaces get a slightly deeper shadow to sit on the dark background */
+.panel, .chart-card, .main-nav, .source-switch, .empty-state { box-shadow: 0 1px 2px rgba(0, 0, 0, .2), 0 10px 30px -10px rgba(0, 0, 0, .45); border-color: rgba(255, 255, 255, .08); }
+.chart-card:hover { box-shadow: 0 2px 4px rgba(0, 0, 0, .25), 0 18px 40px -12px rgba(0, 0, 0, .55); }
+
+.fs-help { flex-basis: 100%; margin-top: 6px; color: var(--text-2); font-size: 13px; }
+.fs-help p { margin-bottom: 4px; }
+.fs-help .src-page-block ol { max-height: 320px; overflow: auto; }
+
+.hint-btn {
+  display: inline-block; margin: 2px 0 3px 4px; padding: 2px 9px;
+  font: inherit; font-size: 11.5px; font-weight: 650;
+  color: var(--primary); background: var(--primary-soft);
+  border: 1px solid #cdd8ff; border-radius: 6px; cursor: pointer;
+}
+.hint-btn:hover { background: #dfe6ff; }
+.hint-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; margin: 14px 0 4px; padding: 12px 14px; border-radius: 12px; background: #f4f6ff; border: 1px solid #dfe5fd; font-size: 13px; color: var(--text-2); }
+.hint-bar p { flex: 1 1 360px; }
