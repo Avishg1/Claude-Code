@@ -25,6 +25,17 @@
   --success: #16a34a;
   --warning: #d97706;
 
+  /* Priority colors */
+  --prio-low: #16a34a;
+  --prio-low-soft: #ecfdf3;
+  --prio-low-text: #15803d;
+  --prio-medium: #eab308;
+  --prio-medium-soft: #fefce8;
+  --prio-medium-text: #a16207;
+  --prio-high: #dc2626;
+  --prio-high-soft: #fef2f2;
+  --prio-high-text: #b91c1c;
+
   --radius-sm: 8px;
   --radius: 12px;
   --radius-lg: 16px;
@@ -362,6 +373,9 @@ input:focus, select:focus, textarea:focus {
   gap: 12px;
   margin-bottom: 16px;
 }
+.toolbar__group { display: flex; align-items: center; flex-wrap: wrap; gap: 12px 18px; }
+.sort-control { display: flex; align-items: center; gap: 8px; }
+.sort-control__label { color: var(--text-muted); font-size: 13.5px; font-weight: 600; }
 
 .overdue-pill {
   display: inline-flex;
@@ -399,9 +413,9 @@ input:focus, select:focus, textarea:focus {
   transition: box-shadow .15s, border-color .15s, background-color .15s;
 }
 .task:hover { box-shadow: var(--shadow); }
-.task--high { border-inline-start-color: #f97316; }
-.task--medium { border-inline-start-color: #60a5fa; }
-.task--low { border-inline-start-color: #cbd5e1; }
+.task--high { border-inline-start-color: var(--prio-high); }
+.task--medium { border-inline-start-color: var(--prio-medium); }
+.task--low { border-inline-start-color: var(--prio-low); }
 
 .task--overdue {
   background: var(--danger-soft);
@@ -455,6 +469,73 @@ input:focus, select:focus, textarea:focus {
 .task__actions { display: flex; gap: 2px; opacity: .55; transition: opacity .15s; }
 .task:hover .task__actions, .task:focus-within .task__actions { opacity: 1; }
 
+/* ---------- Drag & drop ---------- */
+
+.task__handle {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 28px;
+  margin-top: -2px;
+  margin-inline: -8px -6px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-faint);
+  cursor: grab;
+  touch-action: none; /* let touch drags start from the handle instead of scrolling */
+  opacity: .45;
+  transition: opacity .15s, background-color .15s, color .15s;
+}
+.task:hover .task__handle,
+.task__handle:focus-visible { opacity: 1; }
+.task__handle:hover { background: var(--surface-muted); color: var(--text-muted); }
+
+@media (pointer: fine) {
+  .task { cursor: grab; }
+  .task :is(button, input, label) { cursor: pointer; }
+  .task .task__handle { cursor: grab; }
+}
+
+/* The card being dragged: lifted with a soft shadow and slightly faded. */
+.task.task--dragging {
+  position: relative;
+  z-index: 5;
+  opacity: .88;
+  scale: 1.015;
+  border-color: var(--accent);
+  box-shadow: 0 18px 38px -10px rgba(16, 24, 40, 0.30), 0 4px 10px rgba(16, 24, 40, 0.08);
+  cursor: grabbing;
+  transition: box-shadow .15s, opacity .15s, scale .15s, border-color .15s;
+}
+.task--dragging .task__handle { opacity: 1; color: var(--accent); cursor: grabbing; }
+
+/* Neighbours slide out of the way; the dropped card glides into place. */
+.task--shifting { transition: transform .2s ease; }
+.task--dragging.task--dropping {
+  transition: transform .18s ease, box-shadow .18s, opacity .18s, scale .18s;
+  opacity: 1;
+  scale: 1;
+}
+
+body.is-dragging-task { user-select: none; -webkit-user-select: none; }
+body.is-dragging-task, body.is-dragging-task * { cursor: grabbing !important; }
+
+.drag-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: -6px 0 10px;
+  color: var(--text-faint);
+  font-size: 12.5px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .task--shifting, .task--dragging.task--dropping { transition: none; }
+}
+
 .chip {
   display: inline-flex;
   align-items: center;
@@ -470,9 +551,9 @@ input:focus, select:focus, textarea:focus {
 .chip svg { flex-shrink: 0; }
 .chip--overdue { background: #fee2e2; color: var(--danger); font-weight: 600; }
 .chip--overdue-label { background: var(--danger); color: #fff; font-weight: 600; }
-.chip--high { background: #fff1e7; color: #c2410c; }
-.chip--medium { background: var(--accent-soft); color: var(--accent); }
-.chip--low { background: #f1f3f6; color: var(--text-muted); }
+.chip--high { background: var(--prio-high-soft); color: var(--prio-high-text); }
+.chip--medium { background: var(--prio-medium-soft); color: var(--prio-medium-text); }
+.chip--low { background: var(--prio-low-soft); color: var(--prio-low-text); }
 .chip--category { background: #f4f3ff; color: #5b4fd6; }
 
 /* ---------- Empty state ---------- */
@@ -506,7 +587,7 @@ input:focus, select:focus, textarea:focus {
 .dialog[open] { animation: pop .16s ease-out; }
 .dialog--small { width: min(400px, calc(100vw - 32px)); }
 
-.dialog__header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2px; }
+.dialog__header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 2px; }
 .dialog h2 { margin: 0; font-size: 19px; }
 .dialog__actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 6px; }
 .confirm-text { margin: 10px 0 20px; color: var(--text-muted); }
@@ -514,6 +595,201 @@ input:focus, select:focus, textarea:focus {
 @keyframes pop {
   from { opacity: 0; transform: translateY(6px) scale(.98); }
   to { opacity: 1; transform: none; }
+}
+
+/* Closing animation (dialog + backdrop fade out together) */
+.dialog[open]::backdrop { animation: fade-in .16s ease-out; }
+.dialog.is-closing { animation: pop-out .15s ease-in forwards; }
+.dialog.is-closing::backdrop { animation: fade-out .15s ease-in forwards; }
+
+@keyframes pop-out {
+  to { opacity: 0; transform: translateY(6px) scale(.98); }
+}
+@keyframes fade-in { from { opacity: 0; } }
+@keyframes fade-out { to { opacity: 0; } }
+
+/* ---------- Task dialog ---------- */
+
+.dialog--task {
+  width: min(560px, calc(100vw - 32px));
+  padding: 26px 28px 24px;
+  overflow: visible; /* let the category list extend past the dialog edge */
+}
+.dialog--task .form { gap: 18px; }
+.dialog__subtitle { margin: 3px 0 0; color: var(--text-muted); font-size: 14px; }
+.dialog--task .dialog__header {
+  margin: 0 -28px 2px;
+  padding: 0 28px 18px;
+  border-bottom: 1px solid var(--border);
+}
+.dialog--task .dialog__actions {
+  margin: 4px -28px 0;
+  padding: 18px 28px 0;
+  border-top: 1px solid var(--border);
+}
+
+.required { color: var(--danger); font-weight: 700; }
+
+.field--fieldset { margin: 0; padding: 0; border: none; min-inline-size: 0; }
+.field--fieldset legend {
+  padding: 0;
+  margin-bottom: 6px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* Priority picker: three colored toggle buttons backed by radio inputs */
+.priority-picker { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+
+.priority-option {
+  --c: var(--text-muted);
+  --c-soft: var(--surface-muted);
+  --c-text: var(--text);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 44px;
+  border: 1.5px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  user-select: none;
+  transition: border-color .15s, background-color .15s, color .15s, box-shadow .15s, transform .1s;
+}
+.priority-option--low    { --c: var(--prio-low);    --c-soft: var(--prio-low-soft);    --c-text: var(--prio-low-text); }
+.priority-option--medium { --c: var(--prio-medium); --c-soft: var(--prio-medium-soft); --c-text: var(--prio-medium-text); }
+.priority-option--high   { --c: var(--prio-high);   --c-soft: var(--prio-high-soft);   --c-text: var(--prio-high-text); }
+
+.priority-option input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.priority-option__dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--c);
+  box-shadow: 0 0 0 3px var(--c-soft);
+}
+.priority-option:hover { border-color: var(--c); color: var(--c-text); }
+.priority-option:active { transform: scale(.98); }
+.priority-option:has(input:checked) {
+  border-color: var(--c);
+  background: var(--c-soft);
+  color: var(--c-text);
+  box-shadow: 0 0 0 1px var(--c) inset;
+}
+.priority-option:has(input:checked) .priority-option__dot { box-shadow: 0 0 0 3px var(--surface); }
+.priority-option:has(input:focus-visible) { outline: 2px solid var(--c); outline-offset: 2px; }
+
+/* Searchable category combobox */
+.combo { position: relative; }
+.combo input { padding-inline-end: 40px; }
+.combo--new input { padding-inline-end: 92px; }
+
+.combo__toggle {
+  position: absolute;
+  inset-block: 1px;
+  inset-inline-end: 1px;
+  width: 38px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  background: transparent;
+  color: var(--text-faint);
+}
+[dir="rtl"] .combo__toggle { border-radius: var(--radius-sm) 0 0 var(--radius-sm); }
+.combo__toggle svg { transition: transform .15s; }
+.combo.is-open .combo__toggle svg { transform: rotate(180deg); }
+.combo__toggle:hover { color: var(--text); }
+
+.combo__badge {
+  position: absolute;
+  top: 50%;
+  inset-inline-end: 40px;
+  transform: translateY(-50%);
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 11.5px;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+.combo__list {
+  position: absolute;
+  z-index: 5;
+  inset-inline: 0;
+  top: calc(100% + 6px);
+  max-height: 232px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
+  animation: pop .12s ease-out;
+}
+.combo--up .combo__list { top: auto; bottom: calc(100% + 6px); }
+
+.combo__option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 6px 10px;
+  border-radius: 7px;
+  font-size: 14px;
+  cursor: pointer;
+}
+.combo__option.is-active { background: var(--surface-muted); }
+.combo__option[aria-selected="true"] { color: var(--accent); font-weight: 600; }
+.combo__option--none { color: var(--text-muted); }
+.combo__option--create,
+.combo__option--create-prompt { color: var(--accent); font-weight: 600; }
+.combo__option--create-prompt { margin-top: 4px; border-top: 1px solid var(--border); border-radius: 0 0 7px 7px; padding-top: 9px; }
+.combo__option--create.is-active,
+.combo__option--create-prompt.is-active { background: var(--accent-soft); }
+.combo__icon { display: grid; place-items: center; width: 16px; flex-shrink: 0; color: var(--accent); }
+.combo__label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.combo__label mark { background: #fef08a; color: inherit; border-radius: 2px; padding: 0 1px; }
+
+/* ---------- Task enter / update animations ---------- */
+
+.task--enter {
+  animation: task-enter .45s cubic-bezier(.2, .8, .25, 1), task-highlight 1.8s ease-out;
+}
+.task--flash { animation: task-highlight 1.6s ease-out; }
+
+@keyframes task-enter {
+  from { opacity: 0; transform: translateY(-12px) scale(.98); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes task-highlight {
+  0%, 30% { box-shadow: 0 0 0 3px var(--accent-ring), var(--shadow); border-color: var(--accent); }
+  100% { box-shadow: var(--shadow-sm); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .task--enter, .task--flash, .dialog[open], .dialog.is-closing,
+  .dialog[open]::backdrop, .combo__list, .toast { animation: none; }
+}
+
+/* On short screens let the dialog scroll instead of overflowing. */
+@media (max-height: 640px) {
+  .dialog--task { overflow: auto; }
 }
 
 /* ---------- Toast ---------- */

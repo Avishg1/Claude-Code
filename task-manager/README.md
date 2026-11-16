@@ -7,7 +7,8 @@ A full-stack task management app built with Node.js, Express, and SQLite. The fr
 - **Accounts:** sign up with an email and password, log in, and log out. Passwords are hashed with **scrypt** and a random salt per user. Sessions use a random token in an `HttpOnly` cookie, and only a SHA-256 hash of that token is stored in the database.
 - **Tasks:** each task has a title, an optional description, a due date, and a priority (low, medium, or high). You can create, edit, delete, and mark tasks as complete.
 - **Categories:** users create their own categories, then rename or delete them. Deleting a category doesn't delete its tasks; they move to "ללא קטגוריה" (uncategorized).
-- **Dashboard:** tasks are sorted by due date, then by priority. Overdue tasks are highlighted in red. The sidebar shows each category with its count of open tasks, and you can filter the list by status (all, open, or completed).
+- **Manual ordering:** drag tasks to reorder them, or focus a task's grip handle and press the up and down arrow keys. On touchscreens, drag by the handle. The order is saved automatically. A switch lets you choose between "by due date" and "manual order", and dragging a task while sorted by date switches to manual order.
+- **Dashboard:** by default, tasks are sorted by due date, then by priority. Overdue tasks are highlighted in red. The sidebar shows each category with its count of open tasks, and you can filter the list by status (all, open, or completed).
 
 ## Requirements
 
@@ -84,6 +85,8 @@ Every endpoint except sign-up and login requires a session cookie. Request and r
 | POST   | `/api/tasks`          | `{ title, description?, dueDate: "YYYY-MM-DD", priority, categoryId? }` |
 | PUT    | `/api/tasks/:id`      | Updates a task (same body as POST) |
 | PATCH  | `/api/tasks/:id`      | `{ completed: true \| false }` |
+| PUT    | `/api/tasks/order`    | `{ ids: [...] }`: saves the manual order (must list every one of the user's task IDs) |
+| PUT    | `/api/settings`       | `{ sortMode: "due" \| "manual" }` |
 | DELETE | `/api/tasks/:id`      | Deletes a task |
 | GET    | `/api/categories`     | Lists categories with `total` and `open` task counts |
 | POST   | `/api/categories`     | `{ name }` |

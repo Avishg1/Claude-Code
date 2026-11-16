@@ -17,6 +17,7 @@ db.exec(`
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
     email         TEXT NOT NULL UNIQUE COLLATE NOCASE,
     password_hash TEXT NOT NULL,
+    sort_mode     TEXT NOT NULL DEFAULT 'due',
     created_at    TEXT NOT NULL DEFAULT (datetime('now'))
   );
 
@@ -44,10 +45,38 @@ db.exec(`
     due_date    TEXT NOT NULL,
     priority    TEXT NOT NULL DEFAULT 'medium' CHECK (priority IN ('low', 'medium', 'high')),
     completed   INTEGER NOT NULL DEFAULT 0 CHECK (completed IN (0, 1)),
+    position    INTEGER NOT NULL DEFAULT 0,
     created_at  TEXT NOT NULL DEFAULT (datetime('now'))
   );
   CREATE INDEX IF NOT EXISTS idx_tasks_user_due ON tasks(user_id, due_date);
   CREATE INDEX IF NOT EXISTS idx_tasks_category ON tasks(category_id);
 `);
+
+/* ---------- Migrations for databases created by earlier versions ---------- */
+
+const hasColumn = (table, column) =>
+  db.prepare(`PRAGMA table_info(${table})`).all().some((c) => c.name === column);
+
+if (!hasColumn('tasks', 'position')) {
+  // Seed the manual order with the existing due-date order, per user.
+  db.exec(`
+    ALTER TABLE tasks ADD COLUMN position INTEGER NOT NULL DEFAULT 0;
+    UPDATE tasks SET position = (
+      SELECT rn FROM (
+        SELECT id, ROW_NUMBER() OVER (
+          PARTITION BY user_id
+          ORDER BY due_date, CASE priority WHEN 'high' THEN 0 WHEN 'medium' THEN 1 ELSE 2 END, id
+        ) - 1 AS rn
+        FROM tasks
+      ) r WHERE r.id = tasks.id
+    );
+  `);
+}
+
+if (!hasColumn('users', 'sort_mode')) {
+  db.exec(`ALTER TABLE users ADD COLUMN sort_mode TEXT NOT NULL DEFAULT 'due'`);
+}
+
+db.exec('CREATE INDEX IF NOT EXISTS idx_tasks_user_position ON tasks(user_id, position)');
 
 module.exports = db;

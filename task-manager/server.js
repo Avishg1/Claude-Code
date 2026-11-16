@@ -103,12 +103,12 @@ app.use((req, res, next) => {
   const token = getCookie(req, COOKIE_NAME);
   if (token) {
     const row = db.prepare(`
-      SELECT u.id, u.email, s.expires_at AS expiresAt
+      SELECT u.id, u.email, u.sort_mode AS sortMode, s.expires_at AS expiresAt
       FROM sessions s JOIN users u ON u.id = s.user_id
       WHERE s.token_hash = ?
     `).get(hashToken(token));
     if (row && row.expiresAt > Date.now()) {
-      req.user = { id: row.id, email: row.email };
+      req.user = { id: row.id, email: row.email, sortMode: row.sortMode };
       req.sessionTokenHash = hashToken(token);
     }
   }
@@ -217,6 +217,19 @@ app.get('/api/auth/me', requireAuth, (req, res) => {
 });
 
 /* ------------------------------------------------------------------ */
+/* User settings                                                       */
+/* ------------------------------------------------------------------ */
+
+const SORT_MODES = new Set(['due', 'manual']);
+
+app.put('/api/settings', requireAuth, (req, res) => {
+  const sortMode = req.body?.sortMode;
+  if (!SORT_MODES.has(sortMode)) return res.status(400).json({ error: 'אפשרות מיון לא תקינה' });
+  db.prepare('UPDATE users SET sort_mode = ? WHERE id = ?').run(sortMode, req.user.id);
+  res.json({ settings: { sortMode } });
+});
+
+/* ------------------------------------------------------------------ */
 /* Categories API                                                      */
 /* ------------------------------------------------------------------ */
 
@@ -302,7 +315,7 @@ app.use('/api/tasks', requireAuth);
 
 const TASK_SELECT = `
   SELECT t.id, t.title, t.description, t.due_date AS dueDate, t.priority,
-         t.completed, t.category_id AS categoryId, c.name AS categoryName,
+         t.completed, t.position, t.category_id AS categoryId, c.name AS categoryName,
          t.created_at AS createdAt
   FROM tasks t
   LEFT JOIN categories c ON c.id = t.category_id
@@ -352,11 +365,38 @@ app.get('/api/tasks', (req, res) => {
 app.post('/api/tasks', (req, res) => {
   const { value, error } = readTaskInput(req.body, req.user.id);
   if (error) return res.status(400).json({ error });
+  // New tasks go to the top of the manual order.
   const id = Number(db.prepare(`
-    INSERT INTO tasks (user_id, category_id, title, description, due_date, priority)
-    VALUES (?, ?, ?, ?, ?, ?)
-  `).run(req.user.id, value.categoryId, value.title, value.description, value.dueDate, value.priority).lastInsertRowid);
+    INSERT INTO tasks (user_id, category_id, title, description, due_date, priority, position)
+    VALUES (?, ?, ?, ?, ?, ?, (SELECT COALESCE(MIN(position), 0) - 1 FROM tasks WHERE user_id = ?))
+  `).run(req.user.id, value.categoryId, value.title, value.description, value.dueDate, value.priority, req.user.id).lastInsertRowid);
   res.status(201).json({ task: getTask(id, req.user.id) });
+});
+
+// Save the manual order. Body: { ids: [...] } — every one of the user's task ids, in the new order.
+// Must be registered before PUT /api/tasks/:id.
+app.put('/api/tasks/order', (req, res) => {
+  const ids = req.body?.ids;
+  if (!Array.isArray(ids) || ids.length > 10000 || !ids.every((id) => Number.isInteger(id) && id > 0)) {
+    return res.status(400).json({ error: 'סדר לא תקין' });
+  }
+
+  const owned = new Set(db.prepare('SELECT id FROM tasks WHERE user_id = ?').all(req.user.id).map((r) => r.id));
+  const unique = new Set(ids);
+  if (unique.size !== ids.length || unique.size !== owned.size || !ids.every((id) => owned.has(id))) {
+    return res.status(409).json({ error: 'רשימת המשימות השתנתה, נסו שוב' });
+  }
+
+  const update = db.prepare('UPDATE tasks SET position = ? WHERE id = ? AND user_id = ?');
+  db.exec('BEGIN');
+  try {
+    ids.forEach((id, index) => update.run(index, id, req.user.id));
+    db.exec('COMMIT');
+  } catch (err) {
+    db.exec('ROLLBACK');
+    throw err;
+  }
+  res.status(204).end();
 });
 
 app.put('/api/tasks/:id', (req, res) => {
