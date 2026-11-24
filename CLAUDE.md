@@ -2,7 +2,7 @@
 
 ## Language: always Hebrew
 
-Always build web pages in Hebrew unless I explicitly ask for another language.
+Always build all ouputs in Hebrew unless I explicitly ask for another language.
 
 - Set the page to Hebrew and right-to-left: `<html lang="he" dir="rtl">`
 - Write all visible text in Hebrew: headings, buttons, placeholders, messages, and aria-labels.
