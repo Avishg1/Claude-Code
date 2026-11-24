@@ -144,6 +144,7 @@ function sendPage(res, file) {
 
 app.get('/', (req, res) => (req.user ? res.redirect('/dashboard') : sendPage(res, 'index.html')));
 app.get('/dashboard', (req, res) => (req.user ? sendPage(res, 'dashboard.html') : res.redirect('/')));
+app.get('/table', (req, res) => (req.user ? sendPage(res, 'table.html') : res.redirect('/')));
 
 app.use(express.static(path.join(__dirname, 'public'), { index: false }));
 

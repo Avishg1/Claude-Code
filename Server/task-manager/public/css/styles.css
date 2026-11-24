@@ -3,7 +3,7 @@
    ================================================================ */
 
 :root {
-  --bg: #f4f6f9;
+  --bg: #e9eaec;
   --surface: #ffffff;
   --surface-muted: #f8f9fb;
   --border: #e4e7ec;
@@ -1183,4 +1183,20 @@ textarea.detail-description { min-height: 96px; resize: none; overflow: hidden; 
   .main__header { flex-direction: column; align-items: stretch; }
   .field-row { grid-template-columns: 1fr; }
   .task { padding: 14px; gap: 12px; }
+}
+
+/* ---------- Header actions (list / table switch) ---------- */
+
+.main__actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.btn--secondary {
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-sm);
+  text-decoration: none;
+}
+.btn--secondary:hover { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+.btn--secondary svg { color: var(--accent); }
+@media (max-width: 520px) {
+  .main__actions > .btn { flex: 1; }
 }
