@@ -11,6 +11,7 @@
     counts: { all: { total: 0, open: 0 }, uncategorized: { total: 0, open: 0 } },
     view: 'all',        // 'all' | 'none' | <category id>
     status: 'all',      // 'all' | 'open' | 'done'
+    assignee: 'all',    // teams only: 'all' | 'me' | 'none' | <user id as string>
     search: '',         // text in the search bar
     sortMode: 'due',    // 'due' | 'manual' — saved per user on the server
     editingTaskId: null,
@@ -18,6 +19,8 @@
   };
 
   const detail = { taskId: null }; // task shown in the side panel
+
+  const WS = window.TMWorkspace; // personal list / teams (workspace.js)
 
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
@@ -72,6 +75,8 @@
     taskTitle: $('task-title'),
     taskDescription: $('task-description'),
     taskDue: $('task-due'),
+    taskAssignee: $('task-assignee'),
+    assigneeFilter: $('assignee-filter'),
     taskError: $('task-error'),
     taskSubmit: $('task-submit'),
     confirmDialog: $('confirm-dialog'),
@@ -96,7 +101,7 @@
   async function api(path, { method = 'GET', body } = {}) {
     const res = await fetch(path, {
       method,
-      headers: body ? { 'Content-Type': 'application/json' } : {},
+      headers: { ...(body ? { 'Content-Type': 'application/json' } : {}), ...WS.headers() },
       body: body ? JSON.stringify(body) : undefined,
       credentials: 'same-origin',
     });
@@ -105,6 +110,7 @@
       throw new Error('יש להתחבר מחדש');
     }
     const data = res.status === 204 ? null : await res.json().catch(() => null);
+    if (WS.isGone(res, data)) throw new Error(data.error);
     if (!res.ok) throw new Error(data?.error || 'אירעה שגיאה, נסו שוב');
     return data;
   }
@@ -403,6 +409,7 @@
       if (typeof state.view === 'number' && task.categoryId !== state.view) return false;
       if (state.status === 'open' && task.completed) return false;
       if (state.status === 'done' && !task.completed) return false;
+      if (!WS.matchesAssignee(task, state.assignee)) return false;
       return matchesSearch(task, terms);
     });
   }
@@ -454,7 +461,8 @@
       ? ' גררו משימות כדי לשנות את הסדר'
       : ' גררו משימה כדי לעבור לסדר ידני';
     const inView = state.tasks.filter((t) =>
-      state.view === 'all' ? true : state.view === 'none' ? t.categoryId === null : t.categoryId === state.view);
+      (state.view === 'all' ? true : state.view === 'none' ? t.categoryId === null : t.categoryId === state.view)
+      && WS.matchesAssignee(t, state.assignee));
     const openCount = inView.filter((t) => !t.completed).length;
     const overdueCount = inView.filter(isOverdue).length;
 
@@ -542,6 +550,8 @@
       cat.append(document.createTextNode(task.categoryName));
       meta.append(cat);
     }
+
+    if (WS.isTeam) meta.append(assigneeChip(task));
     body.append(meta);
 
     // Actions
@@ -572,6 +582,19 @@
 
     li.append(handle, check, body, actions);
     return li;
+  }
+
+  // Who is responsible for the task (teams only).
+  function assigneeChip(task) {
+    const person = WS.assigneeOf(task);
+    if (!person) {
+      const chip = el('span', 'chip chip--unassigned', 'ללא אחראי');
+      return chip;
+    }
+    const chip = el('span', `chip chip--assignee${person.id === WS.me.id ? ' is-me' : ''}`);
+    chip.append(WS.avatar(person), document.createTextNode(WS.assigneeLabel(task)));
+    chip.title = `אחראי: ${WS.assigneeLabel(task)}`;
+    return chip;
   }
 
   /* ---------------------------------------------------------------- */
@@ -873,6 +896,9 @@
     els.taskDue.value = task?.dueDate ?? todayISO();
     els.taskForm.elements.priority.value = task?.priority ?? 'medium';
     combo.reset(task ? task.categoryId : (typeof state.view === 'number' ? state.view : null));
+    // New tasks in a team default to the person shown by the filter, or to nobody.
+    const defaultAssignee = state.assignee === 'me' ? WS.me?.id : (/^\d+$/.test(state.assignee) ? Number(state.assignee) : null);
+    WS.fillAssigneeSelect(els.taskAssignee, task ? task.assigneeId : defaultAssignee);
     showTaskError('');
     els.taskSubmit.disabled = false;
     showDialog(els.taskDialog);
@@ -882,6 +908,10 @@
   // Make sure a just-saved task is visible with the current view / filter.
   function revealTask(task) {
     if (state.status === 'done' && !task.completed) state.status = 'all';
+    if (!WS.matchesAssignee(task, state.assignee)) {
+      state.assignee = 'all';
+      els.assigneeFilter.value = 'all';
+    }
     const v = state.view;
     if ((v === 'none' && task.categoryId !== null) || (typeof v === 'number' && v !== task.categoryId)) {
       state.view = 'all';
@@ -901,6 +931,7 @@
       priority: els.taskForm.elements.priority.value || 'medium',
       categoryId: category.type === 'existing' ? category.id : null,
     };
+    if (WS.isTeam) payload.assigneeId = els.taskAssignee.value ? Number(els.taskAssignee.value) : null;
 
     if (!payload.title) { showTaskError('יש להזין כותרת למשימה'); els.taskTitle.focus(); return; }
     if (!payload.dueDate) { showTaskError('יש לבחור תאריך יעד'); els.taskDue.focus(); return; }
@@ -973,6 +1004,8 @@
     dueHint: $('detail-due-hint'),
     statusPill: $('detail-status'),
     created: $('detail-created'),
+    creator: $('detail-creator'),
+    assignee: $('detail-assignee'),
     del: $('detail-delete'),
   };
 
@@ -1022,6 +1055,12 @@
     if (radio) radio.checked = true;
     detailCombo.reset(task.categoryId);
     dp.created.textContent = formatCreated(task.createdAt);
+    if (WS.isTeam) {
+      WS.fillAssigneeSelect(dp.assignee, task.assigneeId);
+      const creator = { id: task.createdById, name: task.createdByName, email: task.createdByEmail };
+      dp.creator.replaceChildren(WS.avatar(creator),
+        document.createTextNode(WS.displayName(creator) + (creator.id === WS.me.id ? ' (אני)' : '')));
+    }
     showTitleError(false);
     renderPanelStatus(task);
     requestAnimationFrame(() => { autoGrow(dp.title); autoGrow(dp.description); });
@@ -1196,6 +1235,10 @@
         saveTaskFields(id, { categoryId: selection.type === 'existing' ? selection.id : null });
       }
     },
+  });
+
+  dp.assignee.addEventListener('change', () => {
+    saveTaskFields(detail.taskId, { assigneeId: dp.assignee.value ? Number(dp.assignee.value) : null });
   });
 
   dp.del.addEventListener('click', () => {
@@ -1618,9 +1661,18 @@
 
   (async () => {
     try {
-      const { user } = await api('/api/auth/me');
+      const me = await api('/api/auth/me');
+      const { user } = me;
+      WS.mount(me);
       els.email.textContent = user.email;
       state.sortMode = user.sortMode === 'manual' ? 'manual' : 'due';
+      if (WS.isTeam) {
+        state.assignee = WS.fillAssigneeFilter(els.assigneeFilter, state.assignee);
+        els.assigneeFilter.addEventListener('change', () => {
+          state.assignee = els.assigneeFilter.value;
+          renderTasks();
+        });
+      }
       await loadAll();
     } catch (err) {
       toast(err.message, 'error');

@@ -377,6 +377,22 @@ mark.search-hit {
   color: inherit;
 }
 .topbar__email { color: var(--text-muted); font-size: 14px; }
+
+/* Copyright notice, fixed to the lower-right corner of the main window */
+.copyright {
+  position: fixed;
+  right: 12px;
+  bottom: 10px;
+  z-index: 5;
+  margin: 0;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.85);
+  color: var(--text-muted);
+  font-size: 12px;
+  pointer-events: none; /* never blocks clicks on what's underneath */
+}
+@media print { .copyright { position: static; text-align: center; } }
 .topbar__help { display: inline-flex; align-items: center; gap: 6px; text-decoration: none; }
 @media (max-width: 520px) {
   .topbar__help { padding-inline: 10px; }

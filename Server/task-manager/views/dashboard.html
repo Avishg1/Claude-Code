@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>משימות · לוח בקרה</title>
   <link rel="stylesheet" href="/css/styles.css">
+  <link rel="stylesheet" href="/css/workspace.css">
   <link rel="stylesheet" href="/css/a11y.css">
   <script src="/js/a11y.js"></script>
 </head>
@@ -16,6 +17,7 @@
       </span>
       <span class="brand__name">משימות</span>
     </div>
+    <div class="ws-slot" id="workspace-slot"></div>
     <div class="search" role="search">
       <svg class="search__icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
       <label for="search-input" class="visually-hidden">חיפוש משימות</label>
@@ -96,6 +98,10 @@
             <button type="button" class="segmented__btn" role="tab" aria-selected="false" data-status="open">פתוחות</button>
             <button type="button" class="segmented__btn" role="tab" aria-selected="false" data-status="done">הושלמו</button>
           </div>
+          <label class="assignee-filter team-only">
+            <span>אחראי:</span>
+            <select id="assignee-filter"></select>
+          </label>
           <div class="sort-control">
             <span class="sort-control__label" id="sort-label">מיון:</span>
             <div class="segmented segmented--small" role="radiogroup" aria-labelledby="sort-label">
@@ -209,6 +215,11 @@
         </div>
       </div>
 
+      <div class="field team-only">
+        <label for="detail-assignee">אחראי</label>
+        <select id="detail-assignee"></select>
+      </div>
+
       <dl class="detail-meta">
         <div>
           <dt>סטטוס</dt>
@@ -217,6 +228,10 @@
         <div>
           <dt>נוצרה</dt>
           <dd id="detail-created"></dd>
+        </div>
+        <div class="team-only">
+          <dt>נוצרה על ידי</dt>
+          <dd id="detail-creator" class="creator"></dd>
         </div>
       </dl>
     </div>
@@ -295,6 +310,11 @@
         </div>
       </div>
 
+      <div class="field team-only">
+        <label for="task-assignee">אחראי</label>
+        <select id="task-assignee"></select>
+      </div>
+
       <p class="form-error" id="task-error" role="alert" hidden></p>
 
       <div class="dialog__actions">
@@ -318,6 +338,9 @@
 
   <div class="toast" id="toast" role="status" hidden></div>
 
+  <p class="copyright">© כל הזכויות שמורות לאבישי גרינברג</p>
+
+  <script src="/js/workspace.js"></script>
   <script src="/js/dashboard.js"></script>
 </body>
 </html>

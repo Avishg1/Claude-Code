@@ -10,9 +10,12 @@
     categories: [],
     status: 'all',           // 'all' | 'open' | 'overdue' | 'done'
     category: 'all',         // 'all' | 'none' | <category id as string>
+    assignee: 'all',         // teams only: 'all' | 'me' | 'none' | <user id as string>
     search: '',
     sort: { key: 'dueDate', dir: 1 },
   };
+
+  const WS = window.TMWorkspace; // personal list / teams (workspace.js)
 
   const PRIORITY_LABELS = { low: 'נמוכה', medium: 'בינונית', high: 'גבוהה' };
   const PRIORITY_RANK = { high: 0, medium: 1, low: 2 };
@@ -25,6 +28,8 @@
     stats: $('stats'),
     statusTabs: document.querySelectorAll('[data-status]'),
     categoryFilter: $('category-filter'),
+    assigneeFilter: $('assignee-filter'),
+    taskAssignee: $('task-assignee'),
     headers: document.querySelectorAll('th[data-sort]'),
     body: $('grid-body'),
     empty: $('table-empty'),
@@ -58,7 +63,7 @@
   async function api(path, { method = 'GET', body } = {}) {
     const res = await fetch(path, {
       method,
-      headers: body ? { 'Content-Type': 'application/json' } : {},
+      headers: { ...(body ? { 'Content-Type': 'application/json' } : {}), ...WS.headers() },
       body: body ? JSON.stringify(body) : undefined,
       credentials: 'same-origin',
     });
@@ -67,6 +72,7 @@
       throw new Error('יש להתחבר מחדש');
     }
     const data = res.status === 204 ? null : await res.json().catch(() => null);
+    if (WS.isGone(res, data)) throw new Error(data.error);
     if (!res.ok) throw new Error(data?.error || 'אירעה שגיאה, נסו שוב');
     return data;
   }
@@ -169,6 +175,8 @@
     description: (a, b) => collator.compare(a.description ?? '', b.description ?? ''),
     category: (a, b) => collator.compare(a.categoryName ?? '￿', b.categoryName ?? '￿'),
     priority: (a, b) => PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority],
+    // Tasks without a responsible person sort last.
+    assignee: (a, b) => (!a.assigneeId - !b.assigneeId) || collator.compare(WS.assigneeLabel(a), WS.assigneeLabel(b)),
     dueDate: (a, b) => a.dueDate.localeCompare(b.dueDate),
     status: (a, b) => STATUS_RANK[statusOf(a)] - STATUS_RANK[statusOf(b)],
     createdAt: (a, b) => String(a.createdAt).localeCompare(String(b.createdAt)),
@@ -181,6 +189,7 @@
       .filter((t) => state.status === 'all' || statusOf(t) === state.status || (state.status === 'open' && !t.completed))
       .filter((t) => state.category === 'all'
         || (state.category === 'none' ? t.categoryId == null : String(t.categoryId) === state.category))
+      .filter((t) => WS.matchesAssignee(t, state.assignee))
       .filter((t) => {
         if (!terms.length) return true;
         const hay = normalize(`${t.title} ${t.description ?? ''} ${t.categoryName ?? ''}`);
@@ -284,6 +293,17 @@
     });
     catCell.append(cat);
 
+    // Responsible (teams only; the column is hidden in the personal list)
+    const assigneeCell = el('td', 'col-assignee team-only');
+    const assignee = el('select', 'cell-input cell-select');
+    assignee.setAttribute('aria-label', 'אחראי');
+    if (WS.isTeam) WS.fillAssigneeSelect(assignee, task.assigneeId);
+    assignee.addEventListener('change', () => {
+      const value = assignee.value === '' ? null : Number(assignee.value);
+      save(task, tr, 'assigneeId', value, () => { WS.fillAssigneeSelect(assignee, task.assigneeId); });
+    });
+    assigneeCell.append(assignee);
+
     // Priority
     const prioCell = el('td', 'col-prio');
     const prioWrap = el('div', 'prio');
@@ -331,7 +351,7 @@
     del.addEventListener('click', () => deleteTask(task, tr));
     actionsCell.append(indicator, del);
 
-    tr.append(checkCell, titleCell, descCell, catCell, prioCell, dueCell, statusCell, createdCell, actionsCell);
+    tr.append(checkCell, titleCell, descCell, catCell, assigneeCell, prioCell, dueCell, statusCell, createdCell, actionsCell);
     updateRowState(tr, task);
     return tr;
   }
@@ -641,6 +661,8 @@
     els.taskForm.elements.priority.value = 'medium';
     // Like the dashboard: preselect the category currently being viewed.
     combo.reset(/^\d+$/.test(state.category) ? Number(state.category) : null);
+    const defaultAssignee = state.assignee === 'me' ? WS.me?.id : (/^\d+$/.test(state.assignee) ? Number(state.assignee) : null);
+    WS.fillAssigneeSelect(els.taskAssignee, defaultAssignee);
     showTaskError('');
     els.taskSubmit.disabled = false;
     showDialog(els.taskDialog);
@@ -656,6 +678,7 @@
       els.categoryFilter.value = 'all';
     }
     if (state.search) { state.search = ''; els.search.value = ''; }
+    if (!WS.matchesAssignee(task, state.assignee)) { state.assignee = 'all'; els.assigneeFilter.value = 'all'; }
   }
 
   els.taskForm.addEventListener('submit', async (event) => {
@@ -671,6 +694,7 @@
       priority: els.taskForm.elements.priority.value || 'medium',
       categoryId: category.type === 'existing' ? category.id : null,
     };
+    if (WS.isTeam) payload.assigneeId = els.taskAssignee.value ? Number(els.taskAssignee.value) : null;
 
     if (!payload.title) { showTaskError('יש להזין כותרת למשימה'); els.taskTitle.focus(); return; }
     if (!payload.dueDate) { showTaskError('יש לבחור תאריך יעד'); els.taskDue.focus(); return; }
@@ -770,12 +794,16 @@
 
   async function init() {
     try {
-      const [{ user }, { tasks }, { categories }] = await Promise.all([
-        api('/api/auth/me'),
-        api('/api/tasks'),
-        api('/api/categories'),
-      ]);
+      // Load "me" first: it decides which workspace the other requests ask for.
+      const me = await api('/api/auth/me');
+      WS.mount(me);
+      const [{ tasks }, { categories }] = await Promise.all([api('/api/tasks'), api('/api/categories')]);
+      const { user } = me;
       els.email.textContent = user.email;
+      if (WS.isTeam) {
+        state.assignee = WS.fillAssigneeFilter(els.assigneeFilter, state.assignee);
+        els.assigneeFilter.addEventListener('change', () => { state.assignee = els.assigneeFilter.value; render(); });
+      }
       state.tasks = tasks;
       state.categories = categories;
       renderCategoryFilter();

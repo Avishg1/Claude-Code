@@ -73,6 +73,7 @@
   gap: 12px;
   margin-bottom: 14px;
 }
+.tv__filters { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 18px; }
 .tv__filter { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--text-muted); }
 .tv__filter select {
   height: 34px;
@@ -103,6 +104,7 @@
 .grid {
   width: 100%;
   min-width: 1040px;
+  table-layout: fixed; /* keep the narrow columns at their widths */
   border-collapse: separate;
   border-spacing: 0;
   font-size: 14px;
@@ -161,10 +163,21 @@
 
 /* Column widths */
 .col-check { width: 48px; text-align: center !important; }
-.col-title { width: 24%; }
-.col-desc { width: 24%; }
+.col-title { width: auto; } /* takes the remaining space */
+.col-desc { width: 20%; }
 .col-cat { width: 150px; }
 .col-prio { width: 130px; }
+.col-assignee { width: 160px; }
+/* Teams add a "responsible" column. Fixed layout keeps the small columns at their
+   widths; title and description share what's left (title gets more). */
+.ws-team .grid { min-width: 1240px; }
+.ws-team .col-desc { width: 15%; }
+.ws-team .col-cat { width: 130px; }
+.ws-team .col-assignee { width: 140px; }
+.ws-team .col-prio { width: 120px; }
+.ws-team .col-due { width: 145px; }
+.ws-team .col-status { width: 125px; }
+.ws-team .col-created { width: 100px; }
 .col-due { width: 150px; }
 .col-status { width: 140px; }
 .col-created { width: 110px; color: var(--text-muted); font-size: 13px; white-space: nowrap; padding-inline: 12px !important; }

@@ -180,11 +180,11 @@
 .a11y button:focus-visible { outline: 3px solid #f59e0b; outline-offset: 2px; }
 
 /* The dashboard's task panel slides in from the left: move to the right corner meanwhile. */
-body:has(.detail-panel.is-open) .a11y { left: auto; right: 16px; align-items: flex-end; }
+body:has(.detail-panel.is-open) .a11y { left: auto; right: 16px; bottom: 40px; align-items: flex-end; } /* above the copyright notice */
 
 @media (max-width: 520px) {
   .a11y { left: 12px; bottom: 12px; }
-  body:has(.detail-panel.is-open) .a11y { left: auto; right: 12px; }
+  body:has(.detail-panel.is-open) .a11y { left: auto; right: 12px; bottom: 36px; }
   .a11y__fab { width: 46px; height: 46px; }
 }
 

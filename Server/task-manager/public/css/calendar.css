@@ -169,6 +169,10 @@
 .cal-chip.is-done { --c: var(--border-strong); background: var(--surface-muted); }
 .cal-chip.is-done .cal-chip__title { color: var(--text-faint); text-decoration: line-through; }
 
+/* Responsible person (teams): avatar at the end of the chip */
+.cal-chip .avatar { margin-inline-start: auto; }
+.cal-day__who { display: inline-flex; flex: none; }
+
 .cal-chip.is-dragging { opacity: .4; }
 .cal-chip.is-new { animation: chip-flash 1.6s ease-out; }
 @keyframes chip-flash { from { box-shadow: 0 0 0 3px var(--accent-ring); } }
@@ -294,7 +298,8 @@
   }
   .cal-chip.is-overdue { background: var(--danger); }
   .cal-chip.is-done { background: var(--border-strong); }
-  .cal-chip__title { display: none; }
+  .cal-chip__title,
+  .cal-chip .avatar { display: none; }
 
   .cal-day { display: block; margin-top: 18px; }
 }

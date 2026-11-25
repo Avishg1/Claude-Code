@@ -10,6 +10,7 @@
     tasks: [],
     categories: [],
     category: 'all',         // 'all' | 'none' | <category id as string>
+    assignee: 'all',         // teams only: 'all' | 'me' | 'none' | <user id as string>
     search: '',
     hideDone: false,
     year: now.getFullYear(),
@@ -17,6 +18,8 @@
     selected: null,          // ISO date of the selected day
     editing: null,           // task being edited in the dialog, or null when creating
   };
+
+  const WS = window.TMWorkspace; // personal list / teams (workspace.js)
 
   const PRIORITY_LABELS = { low: 'נמוכה', medium: 'בינונית', high: 'גבוהה' };
   const PRIORITY_RANK = { high: 0, medium: 1, low: 2 };
@@ -27,6 +30,8 @@
     logout: $('logout-btn'),
     search: $('search-input'),
     categoryFilter: $('category-filter'),
+    assigneeFilter: $('assignee-filter'),
+    taskAssignee: $('task-assignee'),
     hideDone: $('hide-done'),
     monthLabel: $('month-label'),
     prev: $('prev-month'),
@@ -69,7 +74,7 @@
   async function api(path, { method = 'GET', body } = {}) {
     const res = await fetch(path, {
       method,
-      headers: body ? { 'Content-Type': 'application/json' } : {},
+      headers: { ...(body ? { 'Content-Type': 'application/json' } : {}), ...WS.headers() },
       body: body ? JSON.stringify(body) : undefined,
       credentials: 'same-origin',
     });
@@ -78,6 +83,7 @@
       throw new Error('יש להתחבר מחדש');
     }
     const data = res.status === 204 ? null : await res.json().catch(() => null);
+    if (WS.isGone(res, data)) throw new Error(data.error);
     if (!res.ok) throw new Error(data?.error || 'אירעה שגיאה, נסו שוב');
     return data;
   }
@@ -179,6 +185,7 @@
       .filter((t) => !(state.hideDone && t.completed))
       .filter((t) => state.category === 'all'
         || (state.category === 'none' ? t.categoryId == null : String(t.categoryId) === state.category))
+      .filter((t) => WS.matchesAssignee(t, state.assignee))
       .filter((t) => {
         if (!terms.length) return true;
         const hay = normalize(`${t.title} ${t.description ?? ''} ${t.categoryName ?? ''}`);
@@ -315,9 +322,12 @@
     chip.classList.toggle('is-done', task.completed);
     chip.classList.toggle('is-overdue', isOverdue(task));
     chip.append(el('span', 'cal-chip__dot'), el('span', 'cal-chip__title', task.title));
+    const person = WS.isTeam ? WS.assigneeOf(task) : null;
+    if (person) chip.append(WS.avatar(person, { size: 18 }));
 
     const status = task.completed ? 'הושלמה' : isOverdue(task) ? 'באיחור' : 'פתוחה';
-    const details = [`עדיפות ${PRIORITY_LABELS[task.priority]}`, status, task.categoryName].filter(Boolean).join(' · ');
+    const responsible = WS.isTeam ? `אחראי: ${WS.assigneeLabel(task) || 'אין'}` : '';
+    const details = [`עדיפות ${PRIORITY_LABELS[task.priority]}`, status, task.categoryName, responsible].filter(Boolean).join(' · ');
     chip.title = `${task.title}\n${details}`;
     chip.setAttribute('aria-label', `${task.title}, ${details}. לחצו לעריכה`);
 
@@ -352,6 +362,13 @@
       open.type = 'button';
       open.append(el('span', 'cal-chip__dot'), el('span', 'cal-day__name', task.title));
       if (task.categoryName) open.append(el('span', 'cal-day__cat', task.categoryName));
+      const person = WS.isTeam ? WS.assigneeOf(task) : null;
+      if (person) {
+        const who = el('span', 'cal-day__who');
+        who.append(WS.avatar(person, { size: 20 }));
+        who.title = `אחראי: ${WS.assigneeLabel(task)}`;
+        open.append(who);
+      }
       open.setAttribute('aria-label', `עריכת "${task.title}"`);
       open.addEventListener('click', () => openTaskDialog({ task }));
 
@@ -667,6 +684,7 @@
       els.taskForm.elements.priority.value = task.priority;
       els.taskDone.checked = task.completed;
       combo.reset(task.categoryId);
+      WS.fillAssigneeSelect(els.taskAssignee, task.assigneeId);
     } else {
       els.taskDialogTitle.textContent = 'משימה חדשה';
       els.taskDialogSubtitle.textContent = 'מלאו את הפרטים ולחצו על יצירה';
@@ -676,6 +694,8 @@
       els.taskDue.value = date ?? state.selected ?? todayISO();
       els.taskForm.elements.priority.value = 'medium';
       combo.reset(/^\d+$/.test(state.category) ? Number(state.category) : null);
+      const defaultAssignee = state.assignee === 'me' ? WS.me?.id : (/^\d+$/.test(state.assignee) ? Number(state.assignee) : null);
+      WS.fillAssigneeSelect(els.taskAssignee, defaultAssignee);
     }
     els.taskDoneRow.hidden = !task;
     els.taskDelete.hidden = !task;
@@ -693,6 +713,7 @@
       els.categoryFilter.value = 'all';
     }
     if (state.search) { state.search = ''; els.search.value = ''; }
+    if (!WS.matchesAssignee(task, state.assignee)) { state.assignee = 'all'; els.assigneeFilter.value = 'all'; }
   }
 
   els.taskForm.addEventListener('submit', async (event) => {
@@ -708,6 +729,7 @@
       priority: els.taskForm.elements.priority.value || 'medium',
       categoryId: category.type === 'existing' ? category.id : null,
     };
+    if (WS.isTeam) payload.assigneeId = els.taskAssignee.value ? Number(els.taskAssignee.value) : null;
 
     if (!payload.title) { showTaskError('יש להזין כותרת למשימה'); els.taskTitle.focus(); return; }
     if (!payload.dueDate) { showTaskError('יש לבחור תאריך יעד'); els.taskDue.focus(); return; }
@@ -806,12 +828,16 @@
 
   async function init() {
     try {
-      const [{ user }, { tasks }, { categories }] = await Promise.all([
-        api('/api/auth/me'),
-        api('/api/tasks'),
-        api('/api/categories'),
-      ]);
+      // Load "me" first: it decides which workspace the other requests ask for.
+      const me = await api('/api/auth/me');
+      WS.mount(me);
+      const [{ tasks }, { categories }] = await Promise.all([api('/api/tasks'), api('/api/categories')]);
+      const { user } = me;
       els.email.textContent = user.email;
+      if (WS.isTeam) {
+        state.assignee = WS.fillAssigneeFilter(els.assigneeFilter, state.assignee);
+        els.assigneeFilter.addEventListener('change', () => { state.assignee = els.assigneeFilter.value; render(); });
+      }
       state.tasks = tasks;
       state.categories = categories;
       renderCategoryFilter();

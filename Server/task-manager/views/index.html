@@ -26,6 +26,11 @@
     </div>
 
     <form id="auth-form" class="form" novalidate>
+      <div class="field" id="name-field" hidden>
+        <label for="name">שם</label>
+        <input id="name" name="name" type="text" autocomplete="name" maxlength="60" placeholder="השם שיוצג לחברי הצוות">
+      </div>
+
       <div class="field">
         <label for="email">אימייל</label>
         <input id="email" name="email" type="email" dir="ltr" autocomplete="email" placeholder="name@example.com" required>
@@ -56,5 +61,6 @@
   </main>
 
   <script src="/js/auth.js"></script>
+  <p class="copyright">© כל הזכויות שמורות לאבישי גרינברג</p>
 </body>
 </html>

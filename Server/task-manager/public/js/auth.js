@@ -2,6 +2,8 @@
 
 (() => {
   const form = document.getElementById('auth-form');
+  const nameInput = document.getElementById('name');
+  const nameField = document.getElementById('name-field');
   const email = document.getElementById('email');
   const password = document.getElementById('password');
   const confirm = document.getElementById('confirm');
@@ -39,6 +41,7 @@
     });
     const isSignup = mode === 'signup';
     confirmField.hidden = !isSignup;
+    nameField.hidden = !isSignup;
     passwordHint.hidden = !isSignup;
     password.autocomplete = isSignup ? 'new-password' : 'current-password';
     title.textContent = COPY[mode].title;
@@ -63,6 +66,8 @@
     if (!payload.email || !email.checkValidity()) return showError('יש להזין כתובת אימייל תקינה');
     if (!payload.password) return showError('יש להזין סיסמה');
     if (mode === 'signup') {
+      payload.name = nameInput.value.trim();
+      if (!payload.name) { nameInput.focus(); return showError('יש להזין שם'); }
       if (payload.password.length < 8) return showError('הסיסמה חייבת להכיל לפחות 8 תווים');
       if (payload.password !== confirm.value) return showError('הסיסמאות אינן תואמות');
     }
