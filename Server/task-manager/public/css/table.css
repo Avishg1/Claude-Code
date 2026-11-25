@@ -61,6 +61,7 @@
 
 .tv__side { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
 .tv__add { height: 44px; padding: 0 20px; }
+.tv__side > .btn--secondary { height: 44px; padding: 0 16px; }
 
 /* ---------- Toolbar ---------- */
 
@@ -316,7 +317,7 @@
 
 @media (max-width: 600px) {
   .tv__side { width: 100%; }
-  .tv__add { width: 100%; }
+  .tv__add, .tv__side > .btn--secondary { flex: 1; }
   .stat { min-width: 0; flex: 1; padding: 8px 12px; }
   .tv__stats { width: 100%; }
 }
