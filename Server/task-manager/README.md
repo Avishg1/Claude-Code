@@ -4,7 +4,7 @@
 מתחילים את השרת באמצעות npm start או node server.js (Claude Code יודיע לנו מה נחוץ כאן).
 נקבל תגובה בסגנון "Server running on http://localhost:3000"
 
-לוגין: AG  CLIa…
+
 
 A full-stack task management app built with Node.js, Express, and SQLite. The frontend is plain HTML, CSS, and JavaScript, and the interface is in Hebrew (right-to-left).
 
