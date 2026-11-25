@@ -1,4 +1,4 @@
-# Task Manager
+# Nihul Bait Nahal Tzalmon Achat (ניהול בית נחל צלמון אחת)
 
 בשלב ראשון נתקין את התלויות: סוגרים את Claude Code (/exit או ctrl-c). נכנסים למחיצת הפרוייקט ומקישים npm install. הפעולה מורידה את כל הספריות והיישום הנדרשים לשרת.
 מתחילים את השרת באמצעות npm start או node server.js (Claude Code יודיע לנו מה נחוץ כאן).

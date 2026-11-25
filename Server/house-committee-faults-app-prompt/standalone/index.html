@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="מערכת לניהול תקלות ותחזוקה בבניין מגורים עבור ועד הבית">
+  <meta name="theme-color" content="#0a1f3d">
+  <title>ניהול תקלות – ועד הבית</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230a1f3d'/%3E%3Cpath d='M14 30 32 15l18 15v19H14z' fill='none' stroke='%23fff' stroke-width='4' stroke-linejoin='round'/%3E%3Cpath d='M28 49V37h8v12' fill='none' stroke='%2360a5fa' stroke-width='4'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#app">דילוג לתוכן הראשי</a>
+
+  <header class="app-header">
+    <div class="header-inner">
+      <a class="brand" href="#/dashboard" aria-label="ניהול תקלות – ועד הבית, מעבר ללוח הבקרה">
+        <svg class="brand-icon" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+          <rect width="64" height="64" rx="14" fill="#16407a"/>
+          <path d="M14 30 32 15l18 15v19H14z" fill="none" stroke="#fff" stroke-width="4" stroke-linejoin="round"/>
+          <path d="M28 49V37h8v12" fill="none" stroke="#60a5fa" stroke-width="4"/>
+        </svg>
+        <span class="brand-text">
+          <strong>ניהול תקלות</strong>
+          <small>ועד הבית</small>
+        </span>
+      </a>
+      <nav class="main-nav" aria-label="ניווט ראשי">
+        <a href="#/dashboard" data-nav="dashboard">לוח בקרה</a>
+        <a href="#/new" data-nav="new">קריאה חדשה</a>
+        <a href="#/stats" data-nav="stats">סטטיסטיקה</a>
+        <a href="#/settings" data-nav="settings">הגדרות</a>
+      </nav>
+    </div>
+  </header>
+
+  <div id="storage-banner" class="storage-banner" role="alert" hidden></div>
+
+  <main id="app" class="app-main" tabindex="-1">
+    <noscript>
+      <p class="alert alert-danger">יש לאפשר JavaScript בדפדפן כדי להשתמש במערכת.</p>
+    </noscript>
+    <p class="loading">טוען נתונים…</p>
+  </main>
+
+  <footer class="app-footer">
+    <p>קיצורי מקלדת: <kbd>N</kbd> קריאה חדשה · <kbd>/</kbd> חיפוש · <kbd>Esc</kbd> סגירת חלון</p>
+    <p>כל הנתונים נשמרים מקומית בדפדפן זה בלבד. מומלץ לבצע גיבוי מדי פעם ממסך ההגדרות.</p>
+  </footer>
+
+  <!-- Accessibility menu -->
+  <button type="button" id="a11y-toggle" class="a11y-toggle" aria-expanded="false" aria-controls="a11y-panel" aria-label="תפריט נגישות">
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <circle cx="12" cy="4" r="2" fill="currentColor"/>
+      <path d="M4 8.5c2.6.8 5.3 1.2 8 1.2s5.4-.4 8-1.2M12 9.7V15m0 0-3 6m3-6 3 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </button>
+  <section id="a11y-panel" class="a11y-panel" role="dialog" aria-labelledby="a11y-title" hidden>
+    <div class="a11y-head">
+      <h2 id="a11y-title">התאמות נגישות</h2>
+      <button type="button" class="icon-btn" data-a11y="close" aria-label="סגירת תפריט הנגישות">✕</button>
+    </div>
+    <div class="a11y-row">
+      <span id="a11y-font-label">גודל טקסט</span>
+      <div class="a11y-font" role="group" aria-labelledby="a11y-font-label">
+        <button type="button" class="btn btn-secondary btn-sm" data-a11y="font-dec" aria-label="הקטנת הטקסט">א−</button>
+        <output id="a11y-font-value" aria-live="polite">100%</output>
+        <button type="button" class="btn btn-secondary btn-sm" data-a11y="font-inc" aria-label="הגדלת הטקסט">א+</button>
+      </div>
+    </div>
+    <div class="a11y-toggles">
+      <button type="button" class="a11y-opt" data-a11y-toggle="contrast" aria-pressed="false">ניגודיות גבוהה</button>
+      <button type="button" class="a11y-opt" data-a11y-toggle="links" aria-pressed="false">הדגשת קישורים</button>
+      <button type="button" class="a11y-opt" data-a11y-toggle="readable" aria-pressed="false">גופן קריא</button>
+      <button type="button" class="a11y-opt" data-a11y-toggle="spacing" aria-pressed="false">ריווח טקסט</button>
+      <button type="button" class="a11y-opt" data-a11y-toggle="motion" aria-pressed="false">עצירת אנימציות</button>
+      <button type="button" class="a11y-opt" data-a11y-toggle="cursor" aria-pressed="false">סמן עכבר גדול</button>
+    </div>
+    <button type="button" class="btn btn-ghost btn-block" data-a11y="reset">איפוס התאמות הנגישות</button>
+  </section>
+
+  <div id="toasts" class="toasts" role="status" aria-live="polite"></div>
+  <div id="print-area" class="print-area" aria-hidden="true"></div>
+
+  <script src="app.js"></script>
+  <p class="copyright">© כל הזכויות שמורות לאבישי גרינברג</p>
+</body>
+</html>

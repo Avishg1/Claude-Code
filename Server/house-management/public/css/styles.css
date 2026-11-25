@@ -276,7 +276,10 @@ input:focus, select:focus, textarea:focus {
 }
 .topbar { gap: 20px; }
 .topbar__user { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
-.topbar .brand { flex-shrink: 0; }
+.topbar .brand { flex-shrink: 0; white-space: nowrap; }
+@media (max-width: 760px) {
+  .topbar .brand__name { display: none; }
+}
 
 /* ---------- Search ---------- */
 

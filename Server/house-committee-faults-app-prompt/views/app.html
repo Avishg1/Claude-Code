@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0a1f3d">
+  <title>ניהול תקלות – ועד הבית</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/styles.css">
+  <script src="/js/a11y.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#app">דילוג לתוכן הראשי</a>
+
+  <header class="app-header">
+    <div class="header-inner">
+      <a class="brand" href="/dashboard" aria-label="ניהול תקלות – ועד הבית, מעבר ללוח הבקרה">
+        <img class="brand-icon" src="/favicon.svg" alt="" width="40" height="40">
+        <span class="brand-text">
+          <strong>ניהול תקלות</strong>
+          <small id="brand-building">ועד הבית</small>
+        </span>
+      </a>
+
+      <div class="building-switch" id="building-switch" hidden>
+        <label for="building-select" class="visually-hidden">בחירת בניין</label>
+        <select id="building-select"></select>
+      </div>
+
+      <nav class="main-nav" id="main-nav" aria-label="ניווט ראשי">
+        <a href="/dashboard" data-nav="dashboard">לוח בקרה</a>
+        <a href="/table" data-nav="table">מבנה טבלאי</a>
+        <a href="/calendar" data-nav="calendar">לוח שנה</a>
+        <a href="/stats" data-nav="stats">סטטיסטיקה</a>
+        <a href="/settings" data-nav="settings">הגדרות</a>
+      </nav>
+
+      <div class="header-user">
+        <span class="header-user-name" id="user-name"></span>
+        <a href="/help" class="btn btn-header" title="מדריך למשתמש">📖 <span class="hide-sm">מדריך</span></a>
+        <button type="button" class="btn btn-header" id="logout-btn">התנתקות</button>
+      </div>
+    </div>
+  </header>
+
+  <main id="app" class="app-main" tabindex="-1">
+    <p class="loading">טוען נתונים…</p>
+  </main>
+
+  <footer class="app-footer">
+    <p>קיצורי מקלדת: <kbd>N</kbd> קריאה חדשה · <kbd>/</kbd> חיפוש · <kbd>Esc</kbd> סגירת חלון</p>
+  </footer>
+
+  <div id="toasts" class="toasts" role="status" aria-live="polite"></div>
+  <div id="print-area" class="print-area" aria-hidden="true"></div>
+
+  <script src="/js/app.js"></script>
+  <p class="copyright">© כל הזכויות שמורות לאבישי גרינברג</p>
+</body>
+</html>
