@@ -1,10 +1,12 @@
 'use strict';
 
 const path = require('node:path');
+const fs = require('node:fs/promises');
 const crypto = require('node:crypto');
 const { promisify } = require('node:util');
 const express = require('express');
 const db = require('./db');
+const markdown = require('./markdown');
 
 const PORT = Number(process.env.PORT) || 3000;
 const COOKIE_NAME = 'tm_session';
@@ -146,6 +148,26 @@ app.get('/', (req, res) => (req.user ? res.redirect('/dashboard') : sendPage(res
 app.get('/dashboard', (req, res) => (req.user ? sendPage(res, 'dashboard.html') : res.redirect('/')));
 app.get('/table', (req, res) => (req.user ? sendPage(res, 'table.html') : res.redirect('/')));
 app.get('/calendar', (req, res) => (req.user ? sendPage(res, 'calendar.html') : res.redirect('/')));
+
+// User guide: README.he.md rendered into views/help.html. Open to everyone, logged in or not.
+app.get('/help', async (req, res, next) => {
+  try {
+    const [template, guide] = await Promise.all([
+      fs.readFile(path.join(VIEWS, 'help.html'), 'utf8'),
+      fs.readFile(path.join(__dirname, 'README.he.md'), 'utf8'),
+    ]);
+    const back = req.user
+      ? { href: '/dashboard', label: 'חזרה למשימות' }
+      : { href: '/', label: 'חזרה להתחברות' };
+    res.set('Cache-Control', 'no-store');
+    res.type('html').send(template
+      .replaceAll('<!--BACK_HREF-->', back.href)
+      .replace('<!--BACK_LABEL-->', back.label)
+      .replace('<!--GUIDE-->', () => markdown.render(guide)));
+  } catch (err) {
+    next(err);
+  }
+});
 
 app.use(express.static(path.join(__dirname, 'public'), { index: false }));
 

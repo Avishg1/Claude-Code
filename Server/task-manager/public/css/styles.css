@@ -249,6 +249,14 @@ input:focus, select:focus, textarea:focus {
 .auth-subtitle { margin: 6px 0 24px; text-align: center; color: var(--text-muted); }
 .auth-card .segmented { margin-bottom: 22px; }
 
+/* Link to the user guide, below the login form */
+.auth-help {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+.auth-help__btn { display: flex; align-items: center; justify-content: center; gap: 8px; }
+
 /* ================================================================
    App layout
    ================================================================ */
@@ -369,6 +377,11 @@ mark.search-hit {
   color: inherit;
 }
 .topbar__email { color: var(--text-muted); font-size: 14px; }
+.topbar__help { display: inline-flex; align-items: center; gap: 6px; text-decoration: none; }
+@media (max-width: 520px) {
+  .topbar__help { padding-inline: 10px; }
+  .topbar__help-label { display: none; }
+}
 .topbar .btn { height: 36px; }
 
 .layout {
