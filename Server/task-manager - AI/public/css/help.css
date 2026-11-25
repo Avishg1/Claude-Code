@@ -1,0 +1,113 @@
+/* ================================================================
+   User guide (/help) — README.he.md rendered as a page
+   ================================================================ */
+
+.help-page .brand--link { color: inherit; text-decoration: none; }
+.help-back { height: 38px; padding: 0 14px; font-size: 14px; }
+
+.help {
+  width: 100%;
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 28px 24px 56px;
+}
+
+.help__card {
+  padding: 36px 44px 44px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  line-height: 1.75;
+}
+
+/* The guide wraps itself in <div dir="rtl">; the page is already RTL. */
+.help__card > div { display: contents; }
+
+.help__card h1 { margin: 0 0 14px; font-size: 30px; line-height: 1.3; }
+.help__card h2 {
+  margin: 0 0 12px;
+  padding-top: 6px;
+  font-size: 22px;
+  line-height: 1.35;
+  scroll-margin-top: 84px;
+}
+.help__card h3 { margin: 22px 0 6px; font-size: 17px; scroll-margin-top: 84px; }
+.help__card p { margin: 0 0 12px; }
+.help__card ul,
+.help__card ol { margin: 0 0 14px; padding-inline-start: 24px; }
+.help__card li { margin-bottom: 6px; }
+.help__card li::marker { color: var(--text-faint); }
+
+.help__card a { color: var(--accent); text-decoration: none; }
+.help__card a:hover { text-decoration: underline; }
+
+.help__card hr {
+  margin: 30px 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+
+.help__card blockquote {
+  margin: 0 0 14px;
+  padding: 10px 16px;
+  border-inline-start: 4px solid var(--accent);
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+}
+.help__card blockquote p { margin: 0; }
+
+.help__card kbd {
+  display: inline-block;
+  min-width: 24px;
+  padding: 1px 7px;
+  border: 1px solid var(--border-strong);
+  border-bottom-width: 2px;
+  border-radius: 6px;
+  background: var(--surface-muted);
+  font-family: var(--font);
+  font-size: 13px;
+  line-height: 1.6;
+  text-align: center;
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+.help__card code {
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--surface-muted);
+  font-size: 13.5px;
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+/* Tables */
+.help__card table {
+  width: 100%;
+  margin: 4px 0 18px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: hidden;
+  font-size: 14.5px;
+  line-height: 1.55;
+}
+.help__card th,
+.help__card td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.help__card th { background: var(--surface-muted); color: var(--text-muted); font-size: 13px; font-weight: 600; }
+.help__card tbody tr:last-child td { border-bottom: 0; }
+
+@media (max-width: 640px) {
+  .help { padding: 16px 16px 40px; }
+  .help__card { padding: 22px 18px 28px; }
+  .help__card h1 { font-size: 24px; }
+  .help__card h2 { font-size: 19px; }
+  .help__card table { display: block; overflow-x: auto; }
+  .help-page .topbar { padding: 0 16px; }
+}

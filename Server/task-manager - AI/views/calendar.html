@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>משימות · לוח שנה</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <link rel="stylesheet" href="/css/table.css">
+  <link rel="stylesheet" href="/css/calendar.css">
+  <link rel="stylesheet" href="/css/workspace.css">
+  <link rel="stylesheet" href="/css/a11y.css">
+  <script src="/js/a11y.js"></script>
+</head>
+<body class="app-page table-page calendar-page">
+  <header class="topbar">
+    <a class="brand brand--link" href="/dashboard" aria-label="חזרה ללוח המשימות">
+      <span class="brand__logo" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+      </span>
+      <span class="brand__name">משימות</span>
+    </a>
+    <div class="ws-slot" id="workspace-slot"></div>
+    <div class="search" role="search">
+      <svg class="search__icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      <label for="search-input" class="visually-hidden">חיפוש בלוח השנה</label>
+      <input id="search-input" type="search" placeholder="חיפוש משימות…" autocomplete="off" spellcheck="false">
+    </div>
+    <div class="topbar__user">
+      <span class="topbar__email" id="user-email" dir="ltr"></span>
+      <a href="/help" class="btn btn--ghost topbar__help" title="מדריך למשתמש" aria-label="מדריך למשתמש">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 5h6a4 4 0 014 4v11a3 3 0 00-3-3H2z"/><path d="M22 5h-6a4 4 0 00-4 4v11a3 3 0 013-3h7z"/></svg>
+        <span class="topbar__help-label">מדריך</span>
+      </a>
+      <button type="button" class="btn btn--ghost" id="logout-btn">התנתקות</button>
+    </div>
+  </header>
+
+  <main class="tv cal">
+    <div class="tv__header">
+      <div>
+        <a href="/dashboard" class="tv__back">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+          חזרה לתצוגת רשימה
+        </a>
+        <h1 class="main__title">לוח שנה</h1>
+        <p class="main__subtitle">לחצו על משימה כדי לערוך אותה, או גררו אותה ליום אחר כדי לשנות את תאריך היעד.</p>
+      </div>
+      <div class="tv__side">
+        <a href="/table" class="btn btn--secondary">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17M3.5 14.5h17M9.5 9.5v10"/></svg>
+          מבנה טבלאי
+        </a>
+        <button type="button" class="btn btn--primary tv__add" id="new-task-btn" title="משימה חדשה (N)" aria-keyshortcuts="N">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+          הוספה
+        </button>
+      </div>
+    </div>
+
+    <div class="tv__toolbar cal__toolbar">
+      <div class="cal__nav">
+        <button type="button" class="btn btn--icon btn--ghost cal__arrow" id="prev-month" aria-label="החודש הקודם" title="החודש הקודם">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+        </button>
+        <h2 class="cal__month" id="month-label" aria-live="polite"></h2>
+        <button type="button" class="btn btn--icon btn--ghost cal__arrow" id="next-month" aria-label="החודש הבא" title="החודש הבא">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
+        </button>
+        <button type="button" class="btn btn--secondary cal__today" id="today-btn">היום</button>
+      </div>
+      <div class="cal__filters">
+        <label class="tv__filter assignee-filter team-only">
+          <span>אחראי:</span>
+          <select id="assignee-filter"></select>
+        </label>
+        <label class="cal__check">
+          <input type="checkbox" id="hide-done">
+          הסתרת משימות שהושלמו
+        </label>
+        <label class="tv__filter">
+          <span>קטגוריה:</span>
+          <select id="category-filter"></select>
+        </label>
+      </div>
+    </div>
+
+    <div class="cal-card">
+      <div class="cal-weekdays" aria-hidden="true">
+        <span>ראשון</span><span>שני</span><span>שלישי</span><span>רביעי</span><span>חמישי</span><span>שישי</span><span>שבת</span>
+      </div>
+      <div class="cal-grid" id="cal-grid"></div>
+    </div>
+
+    <section class="cal-day" id="day-panel" aria-labelledby="day-panel-title">
+      <div class="cal-day__header">
+        <h2 class="cal-day__title" id="day-panel-title"></h2>
+        <button type="button" class="btn btn--secondary" id="day-add-btn">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+          הוספה ליום זה
+        </button>
+      </div>
+      <ul class="cal-day__list" id="day-list"></ul>
+      <p class="cal-day__empty" id="day-empty" hidden>אין משימות ביום זה</p>
+    </section>
+  </main>
+
+  <!-- Task create / edit dialog -->
+  <dialog class="dialog dialog--task" id="task-dialog" aria-labelledby="task-dialog-title" aria-describedby="task-dialog-subtitle">
+    <form class="form" id="task-form" novalidate>
+      <div class="dialog__header">
+        <div>
+          <h2 id="task-dialog-title">משימה חדשה</h2>
+          <p class="dialog__subtitle" id="task-dialog-subtitle">מלאו את הפרטים ולחצו על יצירה</p>
+        </div>
+        <button type="button" class="btn btn--icon btn--ghost" data-close aria-label="סגירה">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
+      </div>
+
+      <div class="field">
+        <label for="task-title">כותרת <span class="required" aria-hidden="true">*</span></label>
+        <input id="task-title" type="text" maxlength="200" required aria-required="true" placeholder="מה צריך לעשות?">
+      </div>
+
+      <div class="field">
+        <label for="task-description">תיאור <span class="optional">(רשות)</span></label>
+        <textarea id="task-description" rows="3" maxlength="2000" placeholder="פרטים נוספים…"></textarea>
+      </div>
+
+      <fieldset class="field field--fieldset">
+        <legend>עדיפות</legend>
+        <div class="priority-picker">
+          <label class="priority-option priority-option--low">
+            <input type="radio" name="priority" value="low">
+            <span class="priority-option__dot" aria-hidden="true"></span>
+            נמוכה
+          </label>
+          <label class="priority-option priority-option--medium">
+            <input type="radio" name="priority" value="medium" checked>
+            <span class="priority-option__dot" aria-hidden="true"></span>
+            בינונית
+          </label>
+          <label class="priority-option priority-option--high">
+            <input type="radio" name="priority" value="high">
+            <span class="priority-option__dot" aria-hidden="true"></span>
+            גבוהה
+          </label>
+        </div>
+      </fieldset>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="task-due">תאריך יעד <span class="required" aria-hidden="true">*</span></label>
+          <input id="task-due" type="date" required aria-required="true">
+        </div>
+
+        <div class="field">
+          <label for="category-input" id="category-label">קטגוריה</label>
+          <div class="combo" id="category-combo">
+            <input id="category-input" type="text" role="combobox" autocomplete="off" maxlength="50"
+                   aria-autocomplete="list" aria-expanded="false" aria-controls="category-options"
+                   placeholder="חיפוש או יצירה…">
+            <span class="combo__badge" id="category-new-badge" hidden>חדשה</span>
+            <button type="button" class="combo__toggle" id="category-toggle" tabindex="-1" aria-label="הצגת כל הקטגוריות">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <ul class="combo__list" id="category-options" role="listbox" aria-labelledby="category-label" hidden></ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="field team-only">
+        <label for="task-assignee">אחראי</label>
+        <select id="task-assignee"></select>
+      </div>
+
+      <label class="cal-done-toggle" id="task-done-row" hidden>
+        <input type="checkbox" id="task-done">
+        המשימה הושלמה
+      </label>
+
+      <p class="form-error" id="task-error" role="alert" hidden></p>
+
+      <div class="dialog__actions">
+        <button type="button" class="btn btn--danger-ghost cal-delete" id="task-delete" hidden>מחיקה</button>
+        <button type="button" class="btn btn--ghost" data-close>ביטול</button>
+        <button type="submit" class="btn btn--primary" id="task-submit">יצירת משימה</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="dialog dialog--small" id="confirm-dialog" aria-labelledby="confirm-title">
+    <form method="dialog">
+      <h2 id="confirm-title">אישור מחיקה</h2>
+      <p class="confirm-text" id="confirm-text"></p>
+      <div class="dialog__actions">
+        <button type="submit" class="btn btn--ghost" value="cancel">ביטול</button>
+        <button type="submit" class="btn btn--danger" value="confirm">מחיקה</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" hidden></div>
+
+  <script src="/js/workspace.js"></script>
+  <script src="/js/calendar.js"></script>
+  <p class="copyright">© כל הזכויות שמורות לאבישי גרינברג</p>
+</body>
+</html>

@@ -1,0 +1,288 @@
+/* ================================================================
+   Accessibility menu (תפריט נגישות) + the settings it applies.
+   Settings are classes on <html>, set by /js/a11y.js.
+   ================================================================ */
+
+/* ---------- Floating button ---------- */
+
+.a11y {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.a11y__fab {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: #1d4ed8;
+  color: #fff;
+  box-shadow: 0 6px 18px rgba(16, 24, 40, 0.28);
+  cursor: pointer;
+  transition: transform .15s, background-color .15s;
+}
+.a11y__fab:hover { background: #1e40af; transform: scale(1.05); }
+.a11y__fab:focus-visible { outline: 3px solid #f59e0b; outline-offset: 3px; }
+/* A small dot shows that some setting is on. */
+.a11y__fab.is-active { position: relative; }
+.a11y__fab.is-active::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 12px;
+  height: 12px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: #16a34a;
+}
+
+/* ---------- Panel ---------- */
+
+.a11y__panel {
+  width: min(340px, calc(100vw - 32px));
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
+  padding: 18px;
+  border: 1px solid #d0d5dd;
+  border-radius: 16px;
+  background: #fff;
+  color: #1d2939;
+  box-shadow: 0 20px 40px -12px rgba(16, 24, 40, 0.35);
+  font-family: "Segoe UI", Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1.4;
+  direction: rtl;
+  text-align: right;
+}
+.a11y__panel[hidden] { display: none; }
+
+.a11y__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.a11y__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 18px;
+  color: #1d4ed8;
+}
+.a11y__close {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #475467;
+  cursor: pointer;
+}
+.a11y__close:hover { background: #f2f4f7; color: #101828; }
+
+/* Text size */
+.a11y__size {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border: 1px solid #e4e7ec;
+  border-radius: 12px;
+  background: #f8f9fb;
+}
+.a11y__size-label { font-weight: 600; }
+.a11y__size-controls { display: flex; align-items: center; gap: 8px; }
+.a11y__size-btn {
+  min-width: 40px;
+  height: 36px;
+  padding: 0 8px;
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+  background: #fff;
+  color: #1d2939;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.a11y__size-btn:hover:not(:disabled) { border-color: #1d4ed8; color: #1d4ed8; }
+.a11y__size-btn:disabled { opacity: .4; cursor: not-allowed; }
+.a11y__size-value { min-width: 46px; font-weight: 700; text-align: center; font-variant-numeric: tabular-nums; }
+
+/* Toggles */
+.a11y__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.a11y__option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 84px;
+  padding: 10px 8px;
+  border: 2px solid #e4e7ec;
+  border-radius: 12px;
+  background: #fff;
+  color: #344054;
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.3;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color .15s, background-color .15s, color .15s;
+}
+.a11y__option:hover { border-color: #98a2b3; }
+.a11y__option[aria-pressed="true"] { border-color: #1d4ed8; background: #eff4ff; color: #1d4ed8; }
+.a11y__option[aria-pressed="true"]::before {
+  content: "✓";
+  align-self: flex-start;
+  margin: -4px -2px -14px 0;
+  font-size: 13px;
+  line-height: 1;
+}
+
+.a11y__reset {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  height: 42px;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  background: #fff;
+  color: #b91c1c;
+  font-size: 14.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.a11y__reset:hover { background: #fef2f2; }
+
+.a11y__note { margin: 10px 0 0; color: #667085; font-size: 12.5px; text-align: center; }
+
+.a11y button:focus-visible { outline: 3px solid #f59e0b; outline-offset: 2px; }
+
+/* The dashboard's task panel slides in from the left: move to the right corner meanwhile. */
+body:has(.detail-panel.is-open) .a11y { left: auto; right: 16px; bottom: 40px; align-items: flex-end; } /* above the copyright notice */
+
+@media (max-width: 520px) {
+  .a11y { left: 12px; bottom: 12px; }
+  body:has(.detail-panel.is-open) .a11y { left: auto; right: 12px; bottom: 36px; }
+  .a11y__fab { width: 46px; height: 46px; }
+}
+
+@media print {
+  .a11y { display: none; }
+}
+
+/* ================================================================
+   Settings
+   ================================================================ */
+
+/* Text size: scales the whole page (the app's sizes are in px). */
+html.a11y-zoomed { zoom: var(--a11y-zoom, 1); }
+/* ...but keep the menu itself at its normal size so it always fits on screen. */
+html.a11y-zoomed .a11y { zoom: calc(1 / var(--a11y-zoom, 1)); }
+
+/* High contrast: darker text, borders and accents on plain white. */
+html.a11y-contrast {
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --surface-muted: #f1f1f1;
+  --border: #5b6472;
+  --border-strong: #111827;
+  --text: #000000;
+  --text-muted: #1f2937;
+  --text-faint: #374151;
+  --accent: #0b3fb8;
+  --accent-hover: #082f8a;
+  --accent-soft: #dfe8ff;
+  --accent-ring: rgba(11, 63, 184, 0.45);
+  --danger: #a30d0d;
+  --danger-hover: #7f0a0a;
+  --danger-soft: #ffe5e5;
+  --danger-border: #a30d0d;
+  --success: #0b6326;
+  --prio-low-text: #0b5c22;
+  --prio-medium-text: #6b4100;
+  --prio-high-text: #8c0b0b;
+}
+html.a11y-contrast body { background: #fff; }
+html.a11y-contrast .topbar { background: #fff; border-bottom: 2px solid #000; }
+html.a11y-contrast ::placeholder { color: #4b5563; opacity: 1; }
+
+/* Highlight links and buttons */
+html.a11y-links a { text-decoration: underline !important; text-underline-offset: 3px; text-decoration-thickness: 2px; }
+html.a11y-links a:not(.a11y *),
+html.a11y-links button:not(.a11y *),
+html.a11y-links [role="button"]:not(.a11y *),
+html.a11y-links summary {
+  outline: 2px solid #f59e0b !important;
+  outline-offset: 1px;
+}
+
+/* Readable font */
+html.a11y-font { --font: Arial, Helvetica, "Segoe UI", sans-serif; }
+html.a11y-font body,
+html.a11y-font button,
+html.a11y-font input,
+html.a11y-font select,
+html.a11y-font textarea {
+  font-family: Arial, Helvetica, "Segoe UI", sans-serif !important;
+  letter-spacing: .02em;
+}
+
+/* Text spacing (WCAG 1.4.12 values) */
+html.a11y-spacing body { line-height: 1.8; letter-spacing: .06em; word-spacing: .16em; }
+html.a11y-spacing p,
+html.a11y-spacing li,
+html.a11y-spacing td,
+html.a11y-spacing label,
+html.a11y-spacing .help__card { line-height: 1.8 !important; }
+html.a11y-spacing p { margin-bottom: 1.4em; }
+
+/* Strong focus indicator */
+html.a11y-focus :focus-visible,
+html.a11y-focus :focus:not(:focus-visible):is(input, textarea, select) {
+  outline: 4px solid #f59e0b !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 0 7px #111827 !important;
+}
+
+/* Stop animations (0s keeps animationend events firing) */
+html.a11y-motion *,
+html.a11y-motion *::before,
+html.a11y-motion *::after {
+  animation-duration: 0s !important;
+  animation-delay: 0s !important;
+  animation-iteration-count: 1 !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
+}
+
+/* Large cursor */
+html.a11y-cursor,
+html.a11y-cursor * {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 24 24'%3E%3Cpath d='M5 2l14 10.5-6.4 1.3 3.6 7-3 1.5-3.5-7L5 20z' fill='%23000' stroke='%23fff' stroke-width='1.4' stroke-linejoin='round'/%3E%3C/svg%3E") 8 3, auto !important;
+}
+html.a11y-cursor :is(a, button, label, select, summary, [role="button"], [role="tab"], input[type="checkbox"], input[type="radio"]),
+html.a11y-cursor :is(a, button, label, select, summary, [role="button"], [role="tab"]) * {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 24 24'%3E%3Cpath d='M9 11V4.5a1.5 1.5 0 013 0V10h.5V8.5a1.5 1.5 0 013 0V10h.5a1.5 1.5 0 013 0v5.5A6.5 6.5 0 0112.5 22h-1A6.5 6.5 0 015 15.5V13a1.5 1.5 0 013 0v1h1z' fill='%23000' stroke='%23fff' stroke-width='1.2' stroke-linejoin='round'/%3E%3C/svg%3E") 14 4, pointer !important;
+}
