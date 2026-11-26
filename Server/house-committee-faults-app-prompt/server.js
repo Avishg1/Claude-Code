@@ -9,6 +9,7 @@ const express = require('express');
 const db = require('./db');
 const markdown = require('./markdown');
 const { insertDefaultOptions, seedDemo, removeFiles, nowIso } = require('./seed');
+const bank = require('./bank');
 
 const PORT = Number(process.env.PORT) || 3100;
 const COOKIE_NAME = 'hcf_session';
@@ -125,6 +126,10 @@ function readPhone(value) {
 
 const isUniqueViolation = (err) => String(err?.message).includes('UNIQUE');
 
+/** Every uploaded file of a building (ticket media + contract documents). */
+const buildingFiles = (buildingId) => db.prepare('SELECT file FROM media WHERE building_id = ? UNION ALL SELECT file FROM contract_files WHERE building_id = ?')
+  .all(buildingId, buildingId).map((r) => r.file);
+
 /* ------------------------------------------------------------------ */
 /* App setup                                                           */
 /* ------------------------------------------------------------------ */
@@ -142,9 +147,10 @@ app.use((req, res, next) => {
   next();
 });
 
-// Small JSON bodies everywhere, except the backup-restore route which has its own (large) parser.
+// Small JSON bodies everywhere, except routes that have their own (large) parser.
 const smallJson = express.json({ limit: '200kb' });
-app.use((req, res, next) => (req.path === '/api/building/backup' ? next() : smallJson(req, res, next)));
+const LARGE_JSON_ROUTES = new Set(['/api/building/backup', '/api/bank/import']);
+app.use((req, res, next) => (LARGE_JSON_ROUTES.has(req.path) ? next() : smallJson(req, res, next)));
 
 // The building `buildingId` as seen by `userId`, or null if they aren't a member.
 function membership(buildingId, userId) {
@@ -221,7 +227,8 @@ function sendPage(res, file) {
   res.sendFile(path.join(VIEWS, file));
 }
 
-const APP_ROUTES = ['/dashboard', '/table', '/calendar', '/stats', '/settings', '/tickets/new', '/tickets/:id', '/tickets/:id/edit'];
+const APP_ROUTES = ['/dashboard', '/table', '/calendar', '/stats', '/settings', '/tickets/new', '/tickets/:id', '/tickets/:id/edit',
+  '/contracts', '/contracts/new', '/contracts/:id', '/contracts/:id/edit', '/bank'];
 
 app.get('/', (req, res) => (req.user ? res.redirect('/dashboard') : sendPage(res, 'index.html')));
 app.get(APP_ROUTES, (req, res) => (req.user ? sendPage(res, 'app.html') : res.redirect('/')));
@@ -386,7 +393,7 @@ app.put('/api/building', requireOwner, (req, res) => {
 
 // Deletes the building with all its tickets, lists and files.
 app.delete('/api/building', requireOwner, (req, res) => {
-  const files = db.prepare('SELECT file FROM media WHERE building_id = ?').all(req.building.id).map((r) => r.file);
+  const files = buildingFiles(req.building.id);
   db.transaction(() => {
     db.prepare('UPDATE users SET active_building_id = NULL WHERE active_building_id = ?').run(req.building.id);
     db.prepare('DELETE FROM buildings WHERE id = ?').run(req.building.id);
@@ -865,6 +872,227 @@ app.delete('/api/media/:id', requireBuilding, (req, res) => {
 });
 
 /* ------------------------------------------------------------------ */
+/* Service contracts                                                   */
+/*   Renewal reminders are computed by the client from end_date (one   */
+/*   calendar month before it). "Handled" is stored per end date in    */
+/*   reminder_ack_end, so renewing re-arms the reminder automatically. */
+/* ------------------------------------------------------------------ */
+
+const FREQUENCIES = ['monthly', 'quarterly', 'semiannual', 'yearly', 'one_time'];
+const CONTRACT_FILE_TYPES = { ...MEDIA_TYPES, pdf: 'application/pdf' };
+delete CONTRACT_FILE_TYPES.mp4;
+delete CONTRACT_FILE_TYPES.mov;
+delete CONTRACT_FILE_TYPES.webm;
+
+const emailField = (v) => {
+  const r = textField(254, 'אימייל')(v);
+  if (r.error) return r;
+  return r.value && !EMAIL_RE.test(r.value) ? { error: 'כתובת האימייל אינה תקינה' } : r;
+};
+const intField = (min, max, message) => (v) => {
+  if (v === undefined || v === null || v === '') return { value: null };
+  const n = Number(v);
+  return Number.isInteger(n) && n >= min && n <= max ? { value: n } : { error: message };
+};
+const moneyField = (v) => {
+  if (v === undefined || v === null || v === '') return { value: null };
+  const n = Number(v);
+  return Number.isFinite(n) && n >= 0 && n <= 100000000 ? { value: Math.round(n * 100) / 100 } : { error: 'העלות אינה תקינה' };
+};
+const requiredDate = (label) => (v) => (isValidDate(v) ? { value: v } : { error: `יש לבחור ${label} תקין` });
+
+const CONTRACT_FIELDS = {
+  title: { col: 'title', parse: textField(120, 'שם השירות', true) },
+  categoryId: { col: 'category_id', parse: optionField('category', 'קטגוריה') },
+  vendorId: { col: 'vendor_id', parse: vendorField },
+  company: { col: 'company', parse: textField(100, 'שם החברה / הספק', true) },
+  contactName: { col: 'contact_name', parse: textField(80, 'שם איש הקשר') },
+  contactPhone: { col: 'contact_phone', parse: phoneField('טלפון איש הקשר') },
+  contactEmail: { col: 'contact_email', parse: emailField },
+  contractNumber: { col: 'contract_number', parse: textField(60, 'מספר החוזה') },
+  startDate: { col: 'start_date', parse: dateField('תאריך תחילת החוזה') },
+  endDate: { col: 'end_date', parse: requiredDate('תאריך סיום / חידוש') },
+  autoRenew: { col: 'auto_renew', parse: boolField, def: false },
+  renewalMonths: { col: 'renewal_months', parse: intField(1, 120, 'תקופת החידוש אינה תקינה (1–120 חודשים)'), def: 12 },
+  cost: { col: 'cost', parse: moneyField },
+  paymentFrequency: { col: 'payment_frequency', parse: enumField(FREQUENCIES, 'תדירות התשלום אינה תקינה'), def: 'yearly' },
+  scope: { col: 'scope', parse: textField(3000, 'פירוט השירות') },
+  notes: { col: 'notes', parse: textField(3000, 'הערות') },
+  responsibleId: { col: 'responsible_id', parse: memberField },
+};
+
+function readContractInput(body, ws) {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return { error: 'בקשה לא תקינה' };
+  const values = {};
+  for (const [key, f] of Object.entries(CONTRACT_FIELDS)) {
+    const has = Object.hasOwn(body, key);
+    const r = f.parse(has ? body[key] : f.def, ws);
+    if (r.error) return { error: r.error };
+    values[key] = r.value;
+  }
+  if (values.renewalMonths == null) values.renewalMonths = 12;
+  if (values.startDate && values.endDate < values.startDate) return { error: 'תאריך הסיום אינו יכול להיות לפני תאריך התחילה' };
+  return { values };
+}
+
+const serializeContractFile = (f) => ({ id: f.id, name: f.name, type: f.type, size: f.size, url: `/api/contract-files/${f.id}` });
+
+function loadContracts(buildingId, contractId = null) {
+  const one = contractId ? ' AND c.id = ?' : '';
+  const args = contractId ? [buildingId, contractId] : [buildingId];
+  const rows = db.prepare(`
+    SELECT c.*, r.name AS responsible_name, COALESCE(r.phone, '') AS responsible_phone, a.name AS ack_by_name
+    FROM service_contracts c
+    LEFT JOIN users r ON r.id = c.responsible_id
+    LEFT JOIN users a ON a.id = c.reminder_ack_by
+    WHERE c.building_id = ?${one} ORDER BY c.end_date, c.id
+  `).all(...args);
+  const files = db.prepare(`
+    SELECT f.id, f.contract_id, f.name, f.type, f.size FROM contract_files f
+    JOIN service_contracts c ON c.id = f.contract_id WHERE c.building_id = ?${one} ORDER BY f.id
+  `).all(...args);
+  return rows.map((c) => ({
+    id: c.id, title: c.title, categoryId: c.category_id, vendorId: c.vendor_id, company: c.company,
+    contactName: str(c.contact_name), contactPhone: str(c.contact_phone), contactEmail: str(c.contact_email),
+    contractNumber: str(c.contract_number), startDate: str(c.start_date), endDate: c.end_date,
+    autoRenew: c.auto_renew === 1, renewalMonths: c.renewal_months, cost: c.cost, paymentFrequency: c.payment_frequency,
+    scope: str(c.scope), notes: str(c.notes),
+    responsibleId: c.responsible_id, responsibleName: str(c.responsible_name), responsiblePhone: str(c.responsible_phone),
+    reminderHandled: !!c.reminder_ack_end && c.reminder_ack_end === c.end_date,
+    reminderAckByName: str(c.ack_by_name), reminderAckAt: c.reminder_ack_at,
+    createdAt: c.created_at, updatedAt: c.updated_at,
+    files: files.filter((f) => f.contract_id === c.id).map(serializeContractFile),
+  }));
+}
+
+const getContract = (ws, id) => loadContracts(ws, id)[0] || null;
+const contractRow = (ws, id) => db.prepare('SELECT * FROM service_contracts WHERE id = ? AND building_id = ?').get(id, ws);
+
+app.use('/api/contracts', requireBuilding);
+
+app.get('/api/contracts', (req, res) => res.json({ contracts: loadContracts(req.building.id) }));
+
+app.get('/api/contracts/:id', (req, res) => {
+  const c = getContract(req.building.id, parseId(req.params.id));
+  if (!c) return res.status(404).json({ error: 'החוזה לא נמצא' });
+  res.json({ contract: c });
+});
+
+app.post('/api/contracts', (req, res) => {
+  const ws = req.building.id;
+  const { values, error } = readContractInput(req.body, ws);
+  if (error) return res.status(400).json({ error });
+  const now = nowIso();
+  const keys = Object.keys(values);
+  const cols = keys.map((k) => CONTRACT_FIELDS[k].col).concat(['building_id', 'created_by', 'created_at', 'updated_at']);
+  const params = keys.map((k) => values[k]).concat([ws, req.user.id, now, now]);
+  const id = Number(db.prepare(`INSERT INTO service_contracts (${cols.join(', ')}) VALUES (${cols.map(() => '?').join(', ')})`).run(...params).lastInsertRowid);
+  res.status(201).json({ contract: getContract(ws, id) });
+});
+
+app.put('/api/contracts/:id', (req, res) => {
+  const ws = req.building.id;
+  const row = contractRow(ws, parseId(req.params.id));
+  if (!row) return res.status(404).json({ error: 'החוזה לא נמצא' });
+  const { values, error } = readContractInput(req.body, ws);
+  if (error) return res.status(400).json({ error });
+  const keys = Object.keys(values);
+  db.prepare(`UPDATE service_contracts SET ${keys.map((k) => `${CONTRACT_FIELDS[k].col} = ?`).join(', ')}, updated_at = ? WHERE id = ?`)
+    .run(...keys.map((k) => values[k]), nowIso(), row.id);
+  res.json({ contract: getContract(ws, row.id) });
+});
+
+// Renew: the old end date becomes the new start date, and the end date moves forward.
+app.post('/api/contracts/:id/renew', (req, res) => {
+  const ws = req.building.id;
+  const row = contractRow(ws, parseId(req.params.id));
+  if (!row) return res.status(404).json({ error: 'החוזה לא נמצא' });
+  const endDate = req.body?.endDate;
+  if (!isValidDate(endDate)) return res.status(400).json({ error: 'יש לבחור תאריך סיום חדש תקין' });
+  if (endDate <= row.end_date) return res.status(400).json({ error: 'תאריך הסיום החדש חייב להיות אחרי תאריך הסיום הנוכחי' });
+  const cost = req.body?.cost === undefined ? { value: row.cost } : moneyField(req.body.cost);
+  if (cost.error) return res.status(400).json({ error: cost.error });
+  db.prepare('UPDATE service_contracts SET start_date = ?, end_date = ?, cost = ?, updated_at = ? WHERE id = ?')
+    .run(row.end_date, endDate, cost.value, nowIso(), row.id);
+  res.json({ contract: getContract(ws, row.id) });
+});
+
+// Mark the current renewal reminder as handled (or undo it).
+app.post('/api/contracts/:id/reminder', (req, res) => {
+  const ws = req.building.id;
+  const row = contractRow(ws, parseId(req.params.id));
+  if (!row) return res.status(404).json({ error: 'החוזה לא נמצא' });
+  if (req.body?.handled === false) {
+    db.prepare('UPDATE service_contracts SET reminder_ack_end = NULL, reminder_ack_by = NULL, reminder_ack_at = NULL WHERE id = ?').run(row.id);
+  } else {
+    db.prepare('UPDATE service_contracts SET reminder_ack_end = end_date, reminder_ack_by = ?, reminder_ack_at = ? WHERE id = ?')
+      .run(req.user.id, nowIso(), row.id);
+  }
+  res.json({ contract: getContract(ws, row.id) });
+});
+
+app.delete('/api/contracts/:id', (req, res) => {
+  const row = contractRow(req.building.id, parseId(req.params.id));
+  if (!row) return res.status(404).json({ error: 'החוזה לא נמצא' });
+  const files = db.prepare('SELECT file FROM contract_files WHERE contract_id = ?').all(row.id).map((r) => r.file);
+  db.prepare('DELETE FROM service_contracts WHERE id = ?').run(row.id);
+  removeFiles(files);
+  res.status(204).end();
+});
+
+// Upload a contract document (PDF or image) as the raw request body, like ticket media.
+app.post('/api/contracts/:id/files', express.raw({ type: () => true, limit: MAX_UPLOAD }), async (req, res) => {
+  const ws = req.building.id;
+  const row = contractRow(ws, parseId(req.params.id));
+  if (!row) return res.status(404).json({ error: 'החוזה לא נמצא' });
+  let name = 'file';
+  try { name = decodeURIComponent(req.get('X-File-Name') || 'file'); } catch { /* keep default */ }
+  name = path.basename(name).slice(0, 150) || 'file';
+  const ext = (name.split('.').pop() || '').toLowerCase();
+  if (!CONTRACT_FILE_TYPES[ext]) return res.status(400).json({ error: 'סוג הקובץ אינו נתמך (pdf, jpg, png, gif, webp)' });
+  if (!Buffer.isBuffer(req.body) || !req.body.length) return res.status(400).json({ error: 'הקובץ ריק' });
+  const file = `${crypto.randomBytes(16).toString('hex')}.${ext}`;
+  await fsp.writeFile(path.join(db.uploadsDir, file), req.body);
+  try {
+    const id = Number(db.prepare('INSERT INTO contract_files (building_id, contract_id, name, type, size, file, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)')
+      .run(ws, row.id, name, CONTRACT_FILE_TYPES[ext], req.body.length, file, nowIso()).lastInsertRowid);
+    db.prepare('UPDATE service_contracts SET updated_at = ? WHERE id = ?').run(nowIso(), row.id);
+    res.status(201).json({ file: serializeContractFile({ id, name, type: CONTRACT_FILE_TYPES[ext], size: req.body.length }) });
+  } catch (err) {
+    removeFiles([file]);
+    throw err;
+  }
+});
+
+app.get('/api/contract-files/:id', requireAuth, (req, res) => {
+  const f = db.prepare('SELECT * FROM contract_files WHERE id = ?').get(parseId(req.params.id));
+  if (!f || !membership(f.building_id, req.user.id)) return res.status(404).json({ error: 'הקובץ לא נמצא' });
+  res.set({
+    'Cache-Control': 'private, max-age=86400',
+    'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; sandbox",
+    'Content-Disposition': `inline; filename*=UTF-8''${encodeURIComponent(f.name)}`,
+  });
+  res.type(f.type);
+  res.sendFile(path.join(db.uploadsDir, path.basename(f.file)), (err) => {
+    if (err && !res.headersSent) res.status(404).json({ error: 'הקובץ לא נמצא' });
+  });
+});
+
+app.delete('/api/contract-files/:id', requireBuilding, (req, res) => {
+  const f = db.prepare('SELECT * FROM contract_files WHERE id = ? AND building_id = ?').get(parseId(req.params.id), req.building.id);
+  if (!f) return res.status(404).json({ error: 'הקובץ לא נמצא' });
+  db.prepare('DELETE FROM contract_files WHERE id = ?').run(f.id);
+  removeFiles([f.file]);
+  res.json({ contract: getContract(req.building.id, f.contract_id) });
+});
+
+/* ------------------------------------------------------------------ */
+/* Bank (see bank.js)                                                  */
+/* ------------------------------------------------------------------ */
+
+bank.registerBankRoutes(app, { requireBuilding });
+
+/* ------------------------------------------------------------------ */
 /* Building data: demo, wipe, backup, restore                          */
 /* ------------------------------------------------------------------ */
 
@@ -874,10 +1102,13 @@ app.post('/api/building/demo', requireOwner, (req, res) => {
   res.json({ ok: true });
 });
 
+// "Start empty": removes all tickets and service contracts (lists and vendors are kept).
 app.delete('/api/building/tickets', requireOwner, (req, res) => {
-  const files = db.prepare('SELECT file FROM media WHERE building_id = ?').all(req.building.id).map((r) => r.file);
+  const files = buildingFiles(req.building.id);
   db.transaction(() => {
     db.prepare('DELETE FROM tickets WHERE building_id = ?').run(req.building.id);
+    db.prepare('DELETE FROM service_contracts WHERE building_id = ?').run(req.building.id);
+    bank.wipeBank(req.building.id);
     db.prepare('UPDATE buildings SET next_number = 1001 WHERE id = ?').run(req.building.id);
   });
   removeFiles(files);
@@ -913,8 +1144,24 @@ app.get('/api/building/backup', async (req, res, next) => {
         statusHistory: t.statusHistory.map((h) => ({ status: h.status, at: h.at, byEmail: emailOf.get(h.byId) || null })),
       });
     }
+    const contractFiles = new Map(db.prepare('SELECT id, file FROM contract_files WHERE building_id = ?').all(ws).map((f) => [f.id, f.file]));
+    const contracts = [];
+    for (const c of loadContracts(ws)) {
+      contracts.push({
+        title: c.title, category: optName.get(c.categoryId) || null, vendorId: c.vendorId, company: c.company,
+        contactName: c.contactName, contactPhone: c.contactPhone, contactEmail: c.contactEmail, contractNumber: c.contractNumber,
+        startDate: c.startDate, endDate: c.endDate, autoRenew: c.autoRenew, renewalMonths: c.renewalMonths, cost: c.cost,
+        paymentFrequency: c.paymentFrequency, scope: c.scope, notes: c.notes,
+        responsibleEmail: emailOf.get(c.responsibleId) || null, reminderHandled: c.reminderHandled,
+        createdAt: c.createdAt, updatedAt: c.updatedAt,
+        files: await Promise.all(c.files.map(async (f) => ({
+          name: f.name, type: f.type,
+          data: (await fsp.readFile(path.join(db.uploadsDir, contractFiles.get(f.id))).catch(() => Buffer.alloc(0))).toString('base64'),
+        }))),
+      });
+    }
     const payload = {
-      app: 'house-committee-faults', version: 2, exportedAt: nowIso(),
+      app: 'house-committee-faults', version: 2, exportedAt: nowIso(), contracts, bank: bank.exportBank(ws),
       building: { name: req.building.name, address: req.building.address || '' },
       nextNumber: db.prepare('SELECT next_number FROM buildings WHERE id = ?').get(ws).next_number,
       settings: {
@@ -938,7 +1185,9 @@ app.post('/api/building/backup', requireOwner, express.json({ limit: MAX_BACKUP 
     return res.status(400).json({ error: 'הקובץ אינו קובץ גיבוי תקין של מערכת זו' });
   }
   const ws = req.building.id;
-  const oldFiles = db.prepare('SELECT file FROM media WHERE building_id = ?').all(ws).map((r) => r.file);
+  // Backups made before service contracts existed have no "contracts" key: keep the current ones then.
+  const replaceContracts = Array.isArray(p.contracts);
+  const oldFiles = replaceContracts ? buildingFiles(ws) : db.prepare('SELECT file FROM media WHERE building_id = ?').all(ws).map((r) => r.file);
   const memberByEmail = new Map(listMembers(ws).map((m) => [m.email.toLowerCase(), m.id]));
   const who = (email) => (email && memberByEmail.get(String(email).toLowerCase())) || null;
   const safe = (v, max) => (typeof v === 'string' ? v.slice(0, max) : null) || null;
@@ -1020,6 +1269,40 @@ app.post('/api/building/backup', requireOwner, express.json({ limit: MAX_BACKUP 
         }
       }
       db.prepare('UPDATE buildings SET next_number = ? WHERE id = ?').run(Math.max(parseId(p.nextNumber) || 0, maxNumber + 1), ws);
+
+      if (replaceContracts) {
+        db.prepare('DELETE FROM service_contracts WHERE building_id = ?').run(ws);
+        const insFile = db.prepare('INSERT INTO contract_files (building_id, contract_id, name, type, size, file, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)');
+        for (const c of p.contracts) {
+          if (!c || typeof c.title !== 'string' || !c.title.trim() || !isValidDate(c.endDate)) continue;
+          const created = typeof c.createdAt === 'string' ? c.createdAt : nowIso();
+          const cost = moneyField(c.cost);
+          const id = Number(db.prepare(`
+            INSERT INTO service_contracts (building_id, title, category_id, vendor_id, company, contact_name, contact_phone, contact_email,
+              contract_number, start_date, end_date, auto_renew, renewal_months, cost, payment_frequency, scope, notes, responsible_id,
+              reminder_ack_end, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
+            ws, c.title.slice(0, 120), optIds.category.get(c.category) ?? null, vendorIds.get(c.vendorId) ?? null,
+            safe(c.company, 100) || '—', safe(c.contactName, 80), safe(c.contactPhone, 20), safe(c.contactEmail, 254),
+            safe(c.contractNumber, 60), isValidDate(c.startDate) ? c.startDate : null, c.endDate, c.autoRenew ? 1 : 0,
+            Number.isInteger(c.renewalMonths) && c.renewalMonths >= 1 && c.renewalMonths <= 120 ? c.renewalMonths : 12,
+            cost.error ? null : cost.value, FREQUENCIES.includes(c.paymentFrequency) ? c.paymentFrequency : 'yearly',
+            safe(c.scope, 3000), safe(c.notes, 3000), who(c.responsibleEmail), c.reminderHandled ? c.endDate : null,
+            created, typeof c.updatedAt === 'string' ? c.updatedAt : created,
+          ).lastInsertRowid);
+          for (const f of Array.isArray(c.files) ? c.files : []) {
+            const ext = (String(f?.name || '').split('.').pop() || '').toLowerCase();
+            if (!CONTRACT_FILE_TYPES[ext] || typeof f.data !== 'string') continue;
+            const buf = Buffer.from(f.data, 'base64');
+            const file = `${crypto.randomBytes(16).toString('hex')}.${ext}`;
+            fs.writeFileSync(path.join(db.uploadsDir, file), buf);
+            written.push(file);
+            insFile.run(ws, id, path.basename(String(f.name)).slice(0, 150), CONTRACT_FILE_TYPES[ext], buf.length, file, nowIso());
+          }
+        }
+      }
+      // Backups made before the bank page existed have no "bank" key: keep the current bank data then.
+      if (p.bank) bank.restoreBank(ws, p.bank);
     });
   } catch (err) {
     removeFiles(written);

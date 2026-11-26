@@ -148,7 +148,144 @@ db.exec(`
     created_at  TEXT NOT NULL
   );
   CREATE INDEX IF NOT EXISTS idx_media_ticket ON media(ticket_id);
+
+  /*
+   * Service contracts (elevator maintenance, cleaning, insurance…).
+   * end_date is the renewal date; the app reminds one month before it.
+   * reminder_ack_end holds the end_date whose reminder was marked as handled,
+   * so changing/renewing the end date automatically re-arms the reminder.
+   */
+  CREATE TABLE IF NOT EXISTS service_contracts (
+    id                INTEGER PRIMARY KEY AUTOINCREMENT,
+    building_id       INTEGER NOT NULL REFERENCES buildings(id) ON DELETE CASCADE,
+    title             TEXT NOT NULL,
+    category_id       INTEGER REFERENCES options(id) ON DELETE SET NULL,
+    vendor_id         INTEGER REFERENCES vendors(id) ON DELETE SET NULL,
+    company           TEXT NOT NULL,
+    contact_name      TEXT,
+    contact_phone     TEXT,
+    contact_email     TEXT,
+    contract_number   TEXT,
+    start_date        TEXT,
+    end_date          TEXT NOT NULL,
+    auto_renew        INTEGER NOT NULL DEFAULT 0 CHECK (auto_renew IN (0, 1)),
+    renewal_months    INTEGER NOT NULL DEFAULT 12,
+    cost              REAL,
+    payment_frequency TEXT NOT NULL DEFAULT 'yearly'
+                      CHECK (payment_frequency IN ('monthly', 'quarterly', 'semiannual', 'yearly', 'one_time')),
+    scope             TEXT,
+    notes             TEXT,
+    responsible_id    INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    reminder_ack_end  TEXT,
+    reminder_ack_by   INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    reminder_ack_at   TEXT,
+    created_by        INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    created_at        TEXT NOT NULL,
+    updated_at        TEXT NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_contracts_building ON service_contracts(building_id);
+
+  -- Contract documents (PDF / images); the file itself lives in data/uploads.
+  CREATE TABLE IF NOT EXISTS contract_files (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    building_id INTEGER NOT NULL REFERENCES buildings(id) ON DELETE CASCADE,
+    contract_id INTEGER NOT NULL REFERENCES service_contracts(id) ON DELETE CASCADE,
+    name        TEXT NOT NULL,
+    type        TEXT NOT NULL,
+    size        INTEGER NOT NULL,
+    file        TEXT NOT NULL UNIQUE,
+    created_at  TEXT NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_contract_files_contract ON contract_files(contract_id);
+
+  /*
+   * Bank: transactions imported from bank-statement CSV files (or added by hand).
+   * amount is signed: positive = credit / income (זכות), negative = debit / expense (חובה).
+   * hash identifies a statement row so importing the same file twice skips duplicates.
+   */
+  CREATE TABLE IF NOT EXISTS bank_categories (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    building_id INTEGER NOT NULL REFERENCES buildings(id) ON DELETE CASCADE,
+    name        TEXT NOT NULL COLLATE NOCASE,
+    -- transfer = neutral money movement (e.g. to / from a savings deposit): not income, not expense
+    kind        TEXT NOT NULL DEFAULT 'expense' CHECK (kind IN ('income', 'expense', 'transfer')),
+    position    INTEGER NOT NULL DEFAULT 0,
+    UNIQUE (building_id, name)
+  );
+
+  -- Auto-categorization: description contains pattern (and matches direction) → category.
+  CREATE TABLE IF NOT EXISTS bank_rules (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    building_id INTEGER NOT NULL REFERENCES buildings(id) ON DELETE CASCADE,
+    pattern     TEXT NOT NULL,
+    direction   TEXT NOT NULL DEFAULT 'any' CHECK (direction IN ('any', 'income', 'expense')),
+    category_id INTEGER NOT NULL REFERENCES bank_categories(id) ON DELETE CASCADE
+  );
+
+  CREATE TABLE IF NOT EXISTS bank_imports (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    building_id    INTEGER NOT NULL REFERENCES buildings(id) ON DELETE CASCADE,
+    account        TEXT NOT NULL,
+    file_name      TEXT,
+    rows_total     INTEGER NOT NULL DEFAULT 0,
+    rows_imported  INTEGER NOT NULL DEFAULT 0,
+    rows_duplicate INTEGER NOT NULL DEFAULT 0,
+    imported_by    INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    created_at     TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS bank_transactions (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    building_id INTEGER NOT NULL REFERENCES buildings(id) ON DELETE CASCADE,
+    import_id   INTEGER REFERENCES bank_imports(id) ON DELETE CASCADE,
+    account     TEXT NOT NULL,
+    date        TEXT NOT NULL,
+    value_date  TEXT,
+    description TEXT NOT NULL,
+    reference   TEXT,
+    amount      REAL NOT NULL,
+    balance     REAL,
+    category_id INTEGER REFERENCES bank_categories(id) ON DELETE SET NULL,
+    contract_id INTEGER REFERENCES service_contracts(id) ON DELETE SET NULL,
+    note        TEXT,
+    hash        TEXT,
+    created_by  INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    created_at  TEXT NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_bank_tx_building_date ON bank_transactions(building_id, date);
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_bank_tx_hash ON bank_transactions(building_id, hash) WHERE hash IS NOT NULL;
 `);
+
+/* ---------- Migrations ---------- */
+
+// bank_categories created before the 'transfer' kind existed: rebuild it with the wider CHECK.
+// (SQLite can't alter a CHECK constraint in place; ids are kept, so references stay valid.)
+const bankCatSql = db.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'bank_categories'").get()?.sql || '';
+if (bankCatSql && !bankCatSql.includes("'transfer'")) {
+  db.exec('PRAGMA foreign_keys = OFF');
+  db.exec('BEGIN');
+  try {
+    db.exec(`
+      CREATE TABLE bank_categories_new (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        building_id INTEGER NOT NULL REFERENCES buildings(id) ON DELETE CASCADE,
+        name        TEXT NOT NULL COLLATE NOCASE,
+        kind        TEXT NOT NULL DEFAULT 'expense' CHECK (kind IN ('income', 'expense', 'transfer')),
+        position    INTEGER NOT NULL DEFAULT 0,
+        UNIQUE (building_id, name)
+      );
+      INSERT INTO bank_categories_new (id, building_id, name, kind, position) SELECT id, building_id, name, kind, position FROM bank_categories;
+      DROP TABLE bank_categories;
+      ALTER TABLE bank_categories_new RENAME TO bank_categories;
+    `);
+    db.exec('COMMIT');
+  } catch (err) {
+    db.exec('ROLLBACK');
+    throw err;
+  } finally {
+    db.exec('PRAGMA foreign_keys = ON');
+  }
+}
 
 db.uploadsDir = uploadsDir;
 

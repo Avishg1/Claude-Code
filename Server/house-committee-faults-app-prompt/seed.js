@@ -80,10 +80,12 @@ function seedDemo(buildingId, memberIds) {
   const ar = (n) => optionId(buildingId, 'area', n);
   const newFiles = [];
 
-  const oldFiles = db.prepare('SELECT file FROM media WHERE building_id = ?').all(buildingId).map((r) => r.file);
+  const oldFiles = db.prepare('SELECT file FROM media WHERE building_id = ? UNION ALL SELECT file FROM contract_files WHERE building_id = ?')
+    .all(buildingId, buildingId).map((r) => r.file);
 
   db.transaction(() => {
     db.prepare('DELETE FROM tickets WHERE building_id = ?').run(buildingId);
+    db.prepare('DELETE FROM service_contracts WHERE building_id = ?').run(buildingId);
 
     // Demo vendors (only those not already in the directory)
     const vendorIds = DEMO_VENDORS.map((v) => {
@@ -216,6 +218,54 @@ function seedDemo(buildingId, memberIds) {
       }
     }
     db.prepare('UPDATE buildings SET next_number = 1011 WHERE id = ?').run(buildingId);
+
+    // Demo service contracts, spread so every reminder state is visible:
+    // due for renewal, expired, already handled, and comfortably active.
+    const insContract = db.prepare(`
+      INSERT INTO service_contracts (building_id, title, category_id, vendor_id, company, contact_name, contact_phone, contact_email,
+        contract_number, start_date, end_date, auto_renew, renewal_months, cost, payment_frequency, scope, notes, responsible_id,
+        reminder_ack_end, reminder_ack_by, reminder_ack_at, created_by, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+    const contracts = [
+      {
+        title: 'תחזוקת מעליות שוטפת', cat: 'מעלית', vendor: 1, email: 'service@sharon-elevators.example', number: 'MA-2025-114',
+        start: dOff(-345), end: dOff(20), auto: 1, months: 12, cost: 650, freq: 'monthly', resp: 2,
+        scope: 'ביקור תחזוקה חודשי, טיפול בתקלות 24/7, בדיקת בודק מוסמך פעמיים בשנה, חלקי חילוף עד 500 ₪ לתקלה.',
+        notes: 'החוזה מתחדש אוטומטית אם לא נשלחת הודעת ביטול 30 יום מראש. לבקש הצעה מתחרה לפני החידוש.',
+      },
+      {
+        title: 'ניקיון חדר מדרגות ולובי', cat: 'ניקיון', vendor: 0, company: 'ניקיון הכרמל', contact: 'אולגה פטרוב', phone: '054-6667788',
+        email: '', number: 'CL-0087', start: dOff(-200), end: dOff(165), auto: 0, months: 12, cost: 1800, freq: 'monthly', resp: 1,
+        scope: 'ניקיון פעמיים בשבוע: שטיפת מדרגות, לובי וחניון, הוצאת פחים, ניקוי חלונות פעם בחודש.', notes: '',
+      },
+      {
+        title: 'תחזוקת גינה והשקיה', cat: 'גינה', vendor: 5, email: '', number: 'GR-31', start: dOff(-340), end: dOff(25),
+        auto: 0, months: 12, cost: 4200, freq: 'quarterly', resp: 3, ack: true,
+        scope: 'גיזום, דישון, החלפת צמחייה עונתית ותחזוקת מערכת ההשקיה.', notes: 'נשלחה בקשה להצעת מחיר מעודכנת.',
+      },
+      {
+        title: 'ביטוח מבנה וצד ג׳', cat: 'אחר', vendor: 0, company: 'ביטוח ישיר לבניינים', contact: 'רונן אלמוג', phone: '03-5556677',
+        email: 'buildings@insure.example', number: 'POL-778812', start: dOff(-370), end: dOff(-5), auto: 0, months: 12, cost: 9600,
+        freq: 'yearly', resp: 1, scope: 'ביטוח רכוש משותף, צנרת, צד שלישי ואחריות ועד הבית.', notes: 'הפוליסה פגה – לחדש בדחיפות!',
+      },
+      {
+        title: 'בדיקת מערכות כיבוי אש', cat: 'בטיחות', vendor: 0, company: 'אש-טק בטיחות', contact: 'עידו נחום', phone: '052-3334455',
+        email: '', number: 'FS-2026-09', start: dOff(-90), end: dOff(275), auto: 1, months: 12, cost: 2400, freq: 'yearly', resp: 3,
+        scope: 'בדיקה שנתית של מטפים, גלגלוני כיבוי ומערכת גילוי עשן, כולל תעודת תקינות.', notes: '',
+      },
+    ];
+    for (const c of contracts) {
+      const v = c.vendor ? DEMO_VENDORS[c.vendor - 1] : null;
+      insContract.run(
+        buildingId, c.title, cat(c.cat), c.vendor ? vendorIds[c.vendor - 1] : null,
+        v ? v.company : c.company, v ? v.contact : c.contact, v ? v.phone : c.phone, c.email || null,
+        c.number, c.start, c.end, c.auto, c.months, c.cost, c.freq, c.scope, c.notes || null, m(c.resp),
+        c.ack ? c.end : null, c.ack ? m(c.resp) : null, c.ack ? at(2) : null, m(1), at(60), at(c.ack ? 2 : 30),
+      );
+    }
+
+    // Demo bank transactions (after the contracts, so payments link to them).
+    require('./bank').seedDemoBank(buildingId, m(1));
   });
 
   removeFiles(oldFiles);
