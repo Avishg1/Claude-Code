@@ -4166,7 +4166,7 @@
 
   async function restoreDemo() {
     if (state.tickets.length || state.contracts.length) {
-      const ok = await confirmDialog('טעינת נתוני ההדגמה תחליף את כל הקריאות וחוזי השירות הקיימים בבניין (אצל כל חברי הוועד). להמשיך?', { okLabel: 'טעינת נתוני הדגמה', danger: true });
+      const ok = await confirmDialog('טעינת נתוני ההדגמה תחליף את כל הקריאות, חוזי השירות ותנועות הבנק הקיימים בבניין (אצל כל חברי הוועד). להמשיך?', { okLabel: 'טעינת נתוני הדגמה', danger: true });
       if (!ok) return;
     }
     await attempt(async () => {
